@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI 드라마 챌린지 — 도전 드라마 플랫폼</title>
+    <meta
+      name="description"
+      content="AI 아바타 배우가 연기하는 숏폼 드라마를 올리고, 도전에서 베스트도전, 정식연재까지 승급하는 플랫폼."
+    />
+    <!-- 파일 추가 없이 끝내려고 SVG를 그대로 넣었다 (favicon 404 방지) -->
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2300d564'/%3E%3Cpath d='M12 9l12 7-12 7z' fill='%2306240f'/%3E%3C/svg%3E"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <!-- 헤더: 로고 / 검색 / 로그인 상태. Week6에 components/common/Header.jsx 가 된다. -->
+    <header class="header">
+      <div class="header__inner">
+        <a class="logo" href="#/" aria-label="홈으로">
+          <span class="logo__mark">▶</span>
+          <span class="logo__text">AI드라마<b>챌린지</b></span>
+        </a>
+
+        <form class="search" id="search-form" role="search">
+          <input
+            id="search-input"
+            class="search__input"
+            type="search"
+            placeholder="작품, 작가 검색"
+            aria-label="작품 검색"
+            autocomplete="off"
+          />
+          <button class="search__button" type="submit" aria-label="검색">🔍</button>
+        </form>
+
+        <nav class="header__actions" id="auth-area" aria-label="계정"></nav>
+      </div>
+
+      <!-- 장르 필터 내비게이션. Week6에 components/common/GenreFilter.jsx 가 된다. -->
+      <nav class="genre-nav" id="genre-nav" aria-label="장르 필터"></nav>
+    </header>
+
+    <main class="main" id="app" tabindex="-1">
+      <!-- 라우터가 이 안을 갈아끼운다. -->
+    </main>
+
+    <footer class="footer">
+      <div class="footer__inner">
+        <p class="footer__note">
+          코딩 공부용 프로젝트 · 데이터는 브라우저 localStorage에만 저장됩니다.
+          실제 AI 영상 생성은 MVP 범위에서 제외했습니다.
+        </p>
+        <div class="footer__tools">
+          <label class="switch">
+            <input type="checkbox" id="dev-mode-toggle" />
+            <span>테스트 모드 (승급 기준 낮추기)</span>
+          </label>
+          <button class="btn btn--ghost btn--sm" id="reset-data">데이터 초기화</button>
+        </div>
+      </div>
+    </footer>
+
+    <!-- 짧은 알림 메시지 (좋아요 실패, 승급 알림 등) -->
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <script type="module" src="script.js"></script>
+  </body>
+</html>

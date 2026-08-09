@@ -1,0 +1,21 @@
+# Week5: secrets hygiene — 키 파일은 절대 커밋하지 않는다
+.env
+.env.*
+!.env.example
+*.local
+
+# 의존성 / 빌드 산출물 (Week6 React 이후)
+node_modules/
+dist/
+build/
+.vite/
+
+# 에디터 / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# 로그
+*.log
+npm-debug.log*
