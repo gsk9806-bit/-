@@ -139,7 +139,7 @@ main{max-width:1180px;margin:0 auto;padding:28px 24px 96px;display:flex;flex-dir
    사진이 흐리게 보여서, 어디를 잘라내고 있는지 눈으로 확인하며 잡을 수 있다. */
 .scaler{position:absolute;top:0;left:0;transform-origin:0 0}
 .mat{position:absolute;inset:0;background:var(--panel-2)}
-.ghost{position:absolute;background-repeat:no-repeat;background-size:cover;background-position:center;opacity:.26}
+.photo-ghost{position:absolute;background-repeat:no-repeat;background-size:cover;background-position:center;opacity:.26}
 .cardwrap{position:absolute}
 
 /* 사진 상자 — 테두리와 손잡이 */
@@ -819,7 +819,7 @@ DEFS.forEach((d, i)=>{
   mat.className = 'mat';
 
   const ghost = document.createElement('div');
-  ghost.className = 'ghost';
+  ghost.className = 'photo-ghost';
   ghosts[i] = ghost;
 
   const cardwrap = document.createElement('div');
