@@ -101,6 +101,9 @@ button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
 button.primary:hover{filter:brightness(1.08);color:#fff}
 button.ghost{background:transparent}
 .saved{font-size:12px;color:var(--ink-3);align-self:center}
+.dlstat{flex-basis:100%;font-size:12.5px;font-weight:600;color:var(--ink-2);min-height:0}
+.dlstat:empty{display:none}
+.dlstat.bad{color:var(--warn)}
 
 /* ─────────────  본문 레이아웃  ───────────── */
 main{max-width:1180px;margin:0 auto;padding:28px 24px 96px;display:flex;flex-direction:column;gap:14px}
@@ -130,8 +133,25 @@ main{max-width:1180px;margin:0 auto;padding:28px 24px 96px;display:flex;flex-dir
   border-radius:6px;overflow:hidden;box-shadow:var(--shadow);
   background:#000;
 }
+.stage.active{box-shadow:var(--shadow),0 0 0 2px var(--accent)}
 .stage.dragover{outline:3px dashed var(--accent);outline-offset:-3px}
 .scaler{position:absolute;top:0;left:0;width:1080px;height:1350px;transform-origin:0 0}
+
+/* 사진이 없는 카드에만 뜨는 붙여넣기 안내 */
+.cue{
+  position:absolute;left:50%;top:34%;transform:translate(-50%,-50%);
+  display:flex;flex-direction:column;align-items:center;gap:6px;
+  pointer-events:none;text-align:center;
+}
+.stage.hasphoto .cue{display:none}
+.cue span{font-size:13px;font-weight:700;color:rgba(255,255,255,.5)}
+.cue .k{
+  font-family:ui-monospace,monospace;font-size:11px;font-weight:600;letter-spacing:.04em;
+  color:rgba(255,255,255,.42);border:1px solid rgba(255,255,255,.22);
+  border-radius:5px;padding:2px 8px;
+}
+.stage.active .cue span{color:rgba(255,255,255,.78)}
+.stage.active .cue .k{color:rgba(255,255,255,.6);border-color:rgba(255,255,255,.36)}
 
 .panel{
   background:var(--panel);border:1px solid var(--line);border-radius:10px;
@@ -169,6 +189,8 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .shot{display:flex;flex-direction:column;gap:6px}
 .shot img{width:100%;border-radius:5px;border:1px solid var(--line);display:block}
 .shot span{font-size:11.5px;color:var(--ink-3)}
+.shot button{padding:6px 10px;font-size:12px}
+body.nosave #btn-saveall,body.nosave .btn-save1{display:none}
 textarea{
   width:100%;min-height:260px;font-family:inherit;font-size:13px;line-height:1.7;
   padding:12px 14px;border-radius:8px;border:1px solid var(--line);
@@ -189,18 +211,21 @@ textarea:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
     <div class="tools">
       <button id="btn-script">태도2 스크립트 넣기</button>
       <button id="btn-copy">텍스트 복사</button>
-      <button id="btn-export" class="primary">이미지로 보기</button>
+      <button id="btn-export">미리보기</button>
+      <button id="btn-saveall" class="primary">PNG 7장 저장</button>
       <button id="btn-reset" class="ghost">초기화</button>
     </div>
     <div class="saved mono" id="saved">저장됨</div>
+    <div class="dlstat" id="dlstat" role="status" aria-live="polite"></div>
   </div>
 </header>
 
 <main>
   <div class="note">
     <h2>쓰는 법</h2>
-    <p>카드 위의 글자를 직접 클릭해서 고칩니다. 사진은 카드를 한 번 누른 뒤 <kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>V</kbd>로 붙여넣거나, 파일을 카드 위로 끌어다 놓거나, 옆의 <b>사진 넣기</b>를 누릅니다. 넣은 사진은 카드 위에서 끌어 위치를 잡고 슬라이더로 확대합니다.</p>
-    <p>글씨체는 <b>Noto Sans KR</b>로 파일 안에 심어 두었습니다. 어떤 기기에서 열어도, 내보낸 PNG에서도 같은 글씨체가 나옵니다. 자간·행간·좌표는 Figma 파일 <span class="mono">클로드 연결</span>의 대표 커버·대표 본문·대표 클로징 값 그대로입니다. 고친 내용은 이 브라우저에 자동 저장됩니다.</p>
+    <p><b>사진</b> — 카드를 한 번 누르면 테두리가 생깁니다. 그 상태에서 <kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>V</kbd>를 누르면 복사해 둔 사진이 그 카드로 들어갑니다. 글자를 고치는 중에 붙여넣어도 사진으로 받습니다. 파일을 카드 위로 끌어다 놓거나 <b>사진 넣기</b>를 눌러도 됩니다. 넣은 사진은 카드 위에서 끌어 위치를 잡고 슬라이더로 확대합니다.</p>
+    <p><b>PNG</b> — <b>PNG 7장 저장</b>을 누르면 1080×1350 PNG 일곱 장을 차례로 받습니다. 카드마다 확인창이 한 번씩 뜹니다. 한 장만 필요하면 그 카드 옆의 <b>PNG 저장</b>을, 굽기 전에 눈으로 확인하려면 <b>미리보기</b>를 누르세요.</p>
+    <p><b>글씨체</b> — Noto Sans KR을 파일 안에 심어 두었습니다. 어떤 기기에서 열어도, 내보낸 PNG에서도 같은 글씨체가 나옵니다. 자간·행간·좌표는 Figma 파일 <span class="mono">클로드 연결</span>의 대표 커버·대표 본문·대표 클로징 값 그대로이고, 고친 내용은 이 브라우저에 자동 저장됩니다.</p>
   </div>
   <div id="rows" class="rows"></div>
 </main>
@@ -208,7 +233,7 @@ textarea:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 <div class="modal" id="modal-shots">
   <div class="sheet">
     <h3>내보낸 카드</h3>
-    <p>이미지를 길게 누르거나 오른쪽 클릭해서 <b>이미지를 다른 이름으로 저장</b>하면 1080×1350 PNG로 받습니다.</p>
+    <p>1080×1350 PNG입니다. 아래 <b>PNG 저장</b>을 누르면 파일로 받습니다. 버튼이 보이지 않으면 이미지를 길게 누르거나 오른쪽 클릭해서 <b>이미지를 다른 이름으로 저장</b>하세요.</p>
     <div class="shots" id="shots"></div>
     <div class="sheetfoot"><button id="shots-close">닫기</button></div>
   </div>
@@ -359,6 +384,52 @@ function save(){
    ══════════════════════════════════════════════════════════ */
 const rowsEl = document.getElementById('rows');
 
+/* ── 글자 끼워넣기 ──────────────────────────────────────────
+   execCommand 는 activeElement 가 아니라 캐럿을 기준으로 동작한다.
+   focus() 만 옮겨 놓으면 캐럿은 이전 카드에 남아 있어서, 붙여넣은 글자가
+   엉뚱한 카드로 들어가거나 그냥 사라진다. 그래서 선택 영역을 직접 다룬다.
+   줄바꿈도 <br> 대신 '\n' 을 넣는다 — textContent 가 <br> 을 읽지 못해
+   저장했다 다시 열면 줄바꿈이 사라지기 때문이다 (본문은 white-space:pre-wrap).
+──────────────────────────────────────────────────────────── */
+/* 브라우저마다 줄바꿈을 '\n' 으로도, <br> 로도, <div> 로도 넣는다.
+   textContent 는 <br> 과 블록 경계를 못 읽어서 저장했다 열면 줄바꿈이
+   사라진다. 어느 형태로 들어왔든 같은 문자열로 읽는다. */
+const BLOCK = { DIV:1, P:1 };
+function readText(el){
+  let out = '';
+  for(const n of el.childNodes){
+    if(n.nodeType === 3) out += n.nodeValue;
+    else if(n.nodeName === 'BR') out += '\n';
+    else if(n.nodeType === 1){
+      if(BLOCK[n.nodeName] && out && !out.endsWith('\n')) out += '\n';
+      out += readText(n);
+    }
+  }
+  return out;
+}
+
+function insertInto(el, text){
+  if(!text) return;
+  const sel = window.getSelection();
+
+  /* 캐럿이 이 요소 안에 없으면 끝에 갖다 놓는다. 이걸 안 하면 execCommand 가
+     엉뚱한 카드의 캐럿 자리에 글자를 넣거나 아무 일도 하지 않는다. */
+  const inside = sel && sel.rangeCount &&
+                 el.contains(sel.getRangeAt(0).commonAncestorContainer);
+  if(!inside){
+    el.focus();
+    const r = document.createRange();
+    r.selectNodeContents(el);
+    r.collapse(false);
+    sel.removeAllRanges();
+    sel.addRange(r);
+  }
+
+  /* 넣는 건 브라우저 편집 엔진에 맡긴다. 텍스트 노드를 직접 끼우면
+     다음 타이핑 때 캐럿이 방금 넣은 글자 앞으로 되돌아간다. */
+  document.execCommand('insertText', false, text);
+}
+
 function gradient(top, bot){
   return `linear-gradient(180deg, rgba(0,0,0,${(top/100).toFixed(3)}) 0%, rgba(0,0,0,${(((top+bot)/2)/100*0.72).toFixed(3)}) 46%, rgba(0,0,0,${(bot/100).toFixed(3)}) 100%)`;
 }
@@ -382,17 +453,20 @@ function buildCard(i){
     te.className = 'te';
     te.textContent = s[key] ?? '';
     if(editable){
-      te.contentEditable = 'true';
+      /* plaintext-only 면 Enter 가 '\n' 으로 들어가고 붙여넣기도 서식이 안 붙는다.
+         못 쓰는 브라우저에서는 보통 contenteditable 로 떨어지고, 그때 생기는
+         <br> 은 readText 가 읽어 준다. */
+      try{ te.contentEditable = 'plaintext-only'; }catch(e){}
+      if(!te.isContentEditable) te.contentEditable = 'true';
       te.dataset.ph = ph || '';
       te.spellcheck = false;
-      te.addEventListener('input', ()=>{ s[key] = te.textContent; te.classList.toggle('empty', !te.textContent); save(); check(i); });
-      te.addEventListener('paste', ev=>{
-        const t = (ev.clipboardData||window.clipboardData).getData('text');
-        if(t){ ev.preventDefault(); document.execCommand('insertText', false, t.replace(/\s*\n\s*/g,' ')); }
+      te.addEventListener('input', ()=>{
+        const v = readText(te);
+        s[key] = v;
+        te.classList.toggle('empty', !v);
+        save(); check(i);
       });
-      te.addEventListener('keydown', ev=>{
-        if(ev.key==='Enter'){ ev.preventDefault(); document.execCommand('insertLineBreak'); }
-      });
+      te.addEventListener('focusin', ()=> setActive(i));
       te.classList.toggle('empty', !te.textContent);
     }
     box.appendChild(te);
@@ -430,6 +504,7 @@ function paint(i){
   photo.style.backgroundPosition = `${s.px}% ${s.py}%`;
   photo.style.transform = `scale(${s.zoom/100})`;
   card.querySelector('.grad').style.background = gradient(s.top, s.bot);
+  if(stages[i]) stages[i].classList.toggle('hasphoto', !!s.img);
 }
 
 /* 넘침 검사 */
@@ -488,7 +563,10 @@ function buildPanel(i){
   const clear = document.createElement('button');
   clear.className = 'ghost'; clear.textContent = '사진 빼기';
   clear.addEventListener('click', ()=>{ s.img=''; s.zoom=100; s.px=50; s.py=50; paint(i); sync(); save(); });
-  row.append(pick, clear, file);
+  const one = document.createElement('button');
+  one.className = 'btn-save1'; one.textContent = 'PNG 저장';
+  one.addEventListener('click', async ()=>{ one.disabled = true; await saveOne(i); one.disabled = false; });
+  row.append(pick, clear, one, file);
   p.appendChild(row);
 
   const sliders = [
@@ -531,8 +609,14 @@ function buildPanel(i){
   return {panel:p, sync};
 }
 
-const cards = [], flags = [], syncs = [];
+const cards = [], flags = [], syncs = [], stages = [];
 let active = 0;
+
+/* 붙여넣기가 어느 카드로 갈지 눈에 보이게 한다 */
+function setActive(i){
+  active = i;
+  stages.forEach((st, n)=> st.classList.toggle('active', n === i));
+}
 
 DEFS.forEach((d, i)=>{
   const row = document.createElement('div');
@@ -546,12 +630,17 @@ DEFS.forEach((d, i)=>{
                + `<span class="role">${d.role}</span>`;
   const stage = document.createElement('div');
   stage.className = 'stage';
+  stages[i] = stage;
   const scaler = document.createElement('div');
   scaler.className = 'scaler';
   const card = buildCard(i);
   cards[i] = card;
   scaler.appendChild(card);
   stage.appendChild(scaler);
+  const cue = document.createElement('div');
+  cue.className = 'cue';
+  cue.innerHTML = '<span>사진을 붙여넣으세요</span><span class="k">Ctrl / ⌘ + V</span>';
+  stage.appendChild(cue);
   left.append(eb, stage);
 
   const {panel, sync} = buildPanel(i);
@@ -566,7 +655,7 @@ DEFS.forEach((d, i)=>{
     e.preventDefault(); stage.classList.remove('dragover');
     setImage(i, e.dataTransfer.files[0]);
   });
-  stage.addEventListener('pointerdown', ()=>{ active = i; });
+  stage.addEventListener('pointerdown', ()=> setActive(i));
 
   let drag = null;
   card.addEventListener('pointerdown', e=>{
@@ -598,12 +687,38 @@ new ResizeObserver(fit).observe(document.body);
 fit();
 document.fonts.ready.then(fit);
 
+/* ── 붙여넣기 ──────────────────────────────────────────────
+   capture 단계에서 클립보드를 먼저 본다. 사진이 들어 있으면 글자 상자에
+   커서가 있든 없든 사진으로 받는다. 그게 아니면 서식을 떼고 글자로 넣는다.
+──────────────────────────────────────────────────────────── */
 window.addEventListener('paste', e=>{
-  if(document.activeElement && document.activeElement.isContentEditable) return;
-  const items = [...(e.clipboardData?.items || [])];
-  const img = items.find(it => it.type.startsWith('image/'));
-  if(img){ e.preventDefault(); setImage(active, img.getAsFile()); }
-});
+  const dt = e.clipboardData;
+  if(!dt) return;
+
+  const file = [...(dt.items||[])]
+    .filter(it => it.kind === 'file' && it.type.startsWith('image/'))
+    .map(it => it.getAsFile())
+    .find(Boolean);
+
+  if(file){
+    e.preventDefault();
+    e.stopPropagation();
+    const el = document.activeElement;
+    const owner = el && el.closest ? el.closest('.card') : null;
+    setImage(owner ? +owner.dataset.idx : active, file);
+    return;
+  }
+
+  const el = document.activeElement;
+  if(el && el.isContentEditable && el.classList.contains('te')){
+    const t = dt.getData('text');
+    if(t){
+      e.preventDefault();
+      e.stopPropagation();
+      insertInto(el, t.replace(/\s*\n\s*/g, ' ').trim());
+    }
+  }
+}, true);
 
 /* ══════════════════════════════════════════════════════════
    내보내기 — 카드 DOM 을 SVG foreignObject 로 감싸 PNG 로 굽는다.
@@ -635,28 +750,161 @@ async function toPNG(card){
   ctx.fillStyle = '#0B0B0D';
   ctx.fillRect(0, 0, 1080, 1350);
   ctx.drawImage(img, 0, 0, 1080, 1350);
-  return cv.toDataURL('image/png');
+  return await new Promise(res => cv.toBlob(res, 'image/png'));
 }
 
+/* ══════════════════════════════════════════════════════════
+   PNG 저장
+   claude.ai 뷰어 안에서는 downloads 기능으로 저장한다 (뷰어가 확인창을
+   띄우고, 거절할 수 있다). 파일로 직접 열었을 때는 그냥 내려받는다.
+   ══════════════════════════════════════════════════════════ */
+const IN_VIEWER = typeof window.claude !== 'undefined';
+let DL = null;
+const dlReady = (async ()=>{
+  try{
+    DL = (window.claude && typeof window.claude.use === 'function')
+      ? await window.claude.use('downloads') : null;
+  }catch(e){ DL = null; }
+  if(!DL && IN_VIEWER) document.body.classList.add('nosave');
+  return DL;
+})();
+
+const DL_MSG = {
+  declined:           '저장을 취소했습니다.',
+  rate_limited:       '저장 확인창이 아직 열려 있습니다. 잠시 뒤 다시 눌러 주세요.',
+  too_large:          '파일이 16MB를 넘습니다. 사진 해상도를 줄여 주세요.',
+  bad_request:        '파일 이름이나 내용에 문제가 있습니다.',
+  rejected_extension: 'PNG 저장이 거부됐습니다.',
+};
+const dlMsg = err => (err && DL_MSG[err.code]) || '이 화면에서는 저장할 수 없습니다. 미리보기에서 이미지를 길게 눌러 저장해 주세요.';
+
+const statEl = document.getElementById('dlstat');
+function stat(msg, bad){
+  statEl.textContent = msg || '';
+  statEl.classList.toggle('bad', !!bad);
+}
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+async function savePNG(blob, filename){
+  await dlReady;
+  if(DL) return DL.save({ filename, data: blob });
+  if(!IN_VIEWER){
+    const u = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = u; a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=> URL.revokeObjectURL(u), 4000);
+    return { status:'saved' };
+  }
+  throw { code:'unavailable' };
+}
+
+/* 확인창이 이미 열려 있으면 한 번 기다렸다 다시 시도한다 */
+async function savePNGRetry(blob, filename){
+  try{ return await savePNG(blob, filename); }
+  catch(err){
+    if(err && err.code === 'rate_limited'){ await sleep(1800); return savePNG(blob, filename); }
+    throw err;
+  }
+}
+
+const fileName = i => `${DEFS[i].frame}.png`;
+
+async function saveOne(i){
+  stat(`${fileName(i)} 굽는 중…`);
+  await document.fonts.ready;
+  try{
+    const blob = await toPNG(cards[i]);
+    await savePNGRetry(blob, fileName(i));
+    stat(`${fileName(i)} 저장했습니다.`);
+  }catch(err){
+    stat(dlMsg(err), true);
+  }
+}
+
+document.getElementById('btn-saveall').addEventListener('click', async e=>{
+  const btn = e.currentTarget;
+  if(btn.disabled) return;
+  btn.disabled = true;
+  const label = btn.textContent;
+  await document.fonts.ready;
+  let done = 0;
+  try{
+    for(let i = 0; i < cards.length; i++){
+      btn.textContent = `${i+1}/7 저장 중…`;
+      stat(`${fileName(i)} — 뷰어가 확인을 물어봅니다.`);
+      const blob = await toPNG(cards[i]);
+      try{
+        await savePNGRetry(blob, fileName(i));
+        done++;
+      }catch(err){
+        // 거절했으면 나머지 6번을 더 물어보지 않는다
+        stat(`${done}장 저장하고 멈췄습니다. ${dlMsg(err)}`, true);
+        return;
+      }
+    }
+    stat(`7장 모두 저장했습니다.`);
+  }catch(err){
+    stat('카드를 굽지 못했습니다. 미리보기로 확인해 주세요.', true);
+  }finally{
+    btn.disabled = false;
+    btn.textContent = label;
+  }
+});
+
+/* ── 미리보기 ───────────────────────────────────────────── */
 const modalShots = document.getElementById('modal-shots');
+let shotURLs = [];
+function clearShots(){
+  shotURLs.forEach(u => URL.revokeObjectURL(u));
+  shotURLs = [];
+}
+
 document.getElementById('btn-export').addEventListener('click', async ()=>{
   const box = document.getElementById('shots');
+  clearShots();
   box.innerHTML = '<p>굽는 중…</p>';
   modalShots.classList.add('on');
+  await dlReady;
   await document.fonts.ready;
-  const out = [];
+  box.innerHTML = '';
   for(let i = 0; i < cards.length; i++){
+    const wrap = document.createElement('div');
+    wrap.className = 'shot';
     try{
-      const png = await toPNG(cards[i]);
-      out.push(`<div class="shot"><img src="${png}" alt="${DEFS[i].frame}"><span class="mono">${DEFS[i].frame}.png</span></div>`);
+      const blob = await toPNG(cards[i]);
+      const url = URL.createObjectURL(blob);
+      shotURLs.push(url);
+      const img = document.createElement('img');
+      img.src = url; img.alt = DEFS[i].frame;
+      const cap = document.createElement('span');
+      cap.className = 'mono';
+      cap.textContent = `${fileName(i)} · ${(blob.size/1024).toFixed(0)}KB`;
+      wrap.append(img, cap);
+      if(DL || !IN_VIEWER){
+        const b = document.createElement('button');
+        b.textContent = 'PNG 저장';
+        b.addEventListener('click', async ()=>{
+          b.disabled = true;
+          try{ await savePNGRetry(blob, fileName(i)); stat(`${fileName(i)} 저장했습니다.`); }
+          catch(err){ stat(dlMsg(err), true); }
+          b.disabled = false;
+        });
+        wrap.appendChild(b);
+      }
     }catch(err){
-      out.push(`<div class="shot"><span class="mono">${DEFS[i].frame} — 굽기 실패. 카드를 화면 캡처해 주세요.</span></div>`);
+      const s = document.createElement('span');
+      s.className = 'mono';
+      s.textContent = `${DEFS[i].frame} — 굽기 실패. 카드를 화면 캡처해 주세요.`;
+      wrap.appendChild(s);
     }
+    box.appendChild(wrap);
   }
-  box.innerHTML = out.join('');
 });
-document.getElementById('shots-close').addEventListener('click', ()=> modalShots.classList.remove('on'));
-modalShots.addEventListener('click', e=>{ if(e.target === modalShots) modalShots.classList.remove('on'); });
+function closeShots(){ modalShots.classList.remove('on'); clearShots(); }
+document.getElementById('shots-close').addEventListener('click', closeShots);
+modalShots.addEventListener('click', e=>{ if(e.target === modalShots) closeShots(); });
 
 document.getElementById('btn-copy').addEventListener('click', async ()=>{
   const txt = DEFS.map((d, i)=>{
