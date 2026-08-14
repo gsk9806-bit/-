@@ -120,7 +120,7 @@ main{max-width:1180px;margin:0 auto;padding:28px 24px 96px;display:flex;flex-dir
 }
 
 .rows{display:flex;flex-direction:column;gap:34px;margin-top:14px}
-.row{display:grid;grid-template-columns:minmax(0,440px) minmax(0,1fr);gap:26px;align-items:start}
+.row{display:grid;grid-template-columns:minmax(0,500px) minmax(0,1fr);gap:26px;align-items:start}
 @media (max-width:880px){.row{grid-template-columns:1fr}}
 
 .eyebrow{display:flex;align-items:baseline;gap:10px;margin-bottom:9px}
@@ -129,17 +129,56 @@ main{max-width:1180px;margin:0 auto;padding:28px 24px 96px;display:flex;flex-dir
 .eyebrow .role{font-size:12px;color:var(--ink-3);margin-left:auto}
 
 .stage{
-  position:relative;width:100%;aspect-ratio:1080/1350;
+  position:relative;width:100%;aspect-ratio:1200/1470;
   border-radius:6px;overflow:hidden;box-shadow:var(--shadow);
-  background:#000;
+  background:var(--panel-2);touch-action:none;
 }
 .stage.active{box-shadow:var(--shadow),0 0 0 2px var(--accent)}
 .stage.dragover{outline:3px dashed var(--accent);outline-offset:-3px}
-.scaler{position:absolute;top:0;left:0;width:1080px;height:1350px;transform-origin:0 0}
+/* 무대는 카드(1080×1350)보다 크다. 남는 테두리에 카드 밖으로 나간
+   사진이 흐리게 보여서, 어디를 잘라내고 있는지 눈으로 확인하며 잡을 수 있다. */
+.scaler{position:absolute;top:0;left:0;transform-origin:0 0}
+.mat{position:absolute;inset:0;background:var(--panel-2)}
+.ghost{position:absolute;background-repeat:no-repeat;background-size:cover;background-position:center;opacity:.26}
+.cardwrap{position:absolute}
+
+/* 사진 상자 — 테두리와 손잡이 */
+.frame{position:absolute;pointer-events:none;outline:calc(1.5px / var(--sc)) solid var(--accent);display:none}
+.stage.hasphoto .frame{display:block}
+.h{
+  position:absolute;pointer-events:auto;
+  width:calc(20px / var(--sc));height:calc(20px / var(--sc));
+  margin:calc(-10px / var(--sc)) 0 0 calc(-10px / var(--sc));
+  display:flex;align-items:center;justify-content:center;
+}
+.h::after{
+  content:'';display:block;
+  width:calc(9px / var(--sc));height:calc(9px / var(--sc));
+  background:var(--panel);border:calc(1.5px / var(--sc)) solid var(--accent);
+  border-radius:calc(2px / var(--sc));
+}
+.h[data-h="nw"]{left:0;top:0;cursor:nwse-resize}
+.h[data-h="n"]{left:50%;top:0;cursor:ns-resize}
+.h[data-h="ne"]{left:100%;top:0;cursor:nesw-resize}
+.h[data-h="e"]{left:100%;top:50%;cursor:ew-resize}
+.h[data-h="se"]{left:100%;top:100%;cursor:nwse-resize}
+.h[data-h="s"]{left:50%;top:100%;cursor:ns-resize}
+.h[data-h="sw"]{left:0;top:100%;cursor:nesw-resize}
+.h[data-h="w"]{left:0;top:50%;cursor:ew-resize}
+
+/* 끌고 있는 동안 크기를 숫자로 보여준다 */
+.size{
+  position:absolute;left:50%;top:0;transform:translate(-50%,-140%);
+  font-family:ui-monospace,monospace;font-size:calc(13px / var(--sc));
+  background:var(--accent);color:#fff;border-radius:calc(4px / var(--sc));
+  padding:calc(3px / var(--sc)) calc(8px / var(--sc));
+  white-space:nowrap;opacity:0;transition:opacity .12s;
+}
+.stage.sizing .size{opacity:1}
 
 /* 사진이 없는 카드에만 뜨는 붙여넣기 안내 */
 .cue{
-  position:absolute;left:50%;top:34%;transform:translate(-50%,-50%);
+  position:absolute;left:50%;top:38%;transform:translate(-50%,-50%);
   display:flex;flex-direction:column;align-items:center;gap:6px;
   pointer-events:none;text-align:center;
 }
@@ -162,6 +201,7 @@ main{max-width:1180px;margin:0 auto;padding:28px 24px 96px;display:flex;flex-dir
 .slider{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center}
 input[type=range]{width:100%;accent-color:var(--accent)}
 .val{font-size:12px;color:var(--ink-2);min-width:44px;text-align:right}
+.boxval{font-size:13px;color:var(--ink);font-weight:600}
 .btnrow{display:flex;flex-wrap:wrap;gap:8px}
 .flag{
   display:none;font-size:12.5px;font-weight:700;line-height:1.5;
@@ -223,7 +263,8 @@ textarea:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 <main>
   <div class="note">
     <h2>쓰는 법</h2>
-    <p><b>사진</b> — 카드를 한 번 누르면 테두리가 생깁니다. 그 상태에서 <kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>V</kbd>를 누르면 복사해 둔 사진이 그 카드로 들어갑니다. 글자를 고치는 중에 붙여넣어도 사진으로 받습니다. 넣은 사진은 카드 위에서 끌어 위치를 잡고 슬라이더로 확대합니다.</p>
+    <p><b>사진</b> — 카드를 한 번 누르면 테두리가 생깁니다. 그 상태에서 <kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>V</kbd>를 누르면 복사해 둔 사진이 그 카드로 들어갑니다. 글자를 고치는 중에 붙여넣어도 사진으로 받습니다.</p>
+    <p><b>사진 상자</b> — 넣은 사진은 주황색 상자로 표시됩니다. 상자를 <b>끌면 옮겨지고</b>, <b>모서리</b>를 끌면 비율을 지킨 채 커지거나 작아지고, <b>변 가운데</b>를 끌면 그쪽만 늘거나 줄어 사진이 잘립니다. 끄는 동안 크기가 숫자로 뜹니다. 카드 밖으로 나간 부분은 흐리게 보이고 실제 카드에는 나오지 않습니다.</p>
     <p><b>Ctrl</b>/<b>⌘</b>+<b>V</b>를 눌렀는데 위쪽에 아무 메시지도 뜨지 않으면, 이 화면이 키 입력을 받지 못한 것입니다. 카드를 한 번 더 누르고 다시 시도하거나, <b>클립보드에서</b> 버튼을 누르세요. 파일을 카드 위로 끌어다 놓거나 <b>사진 넣기</b>로 골라도 됩니다.</p>
     <p><b>PNG</b> — <b>PNG 7장 저장</b>을 누르면 1080×1350 PNG 일곱 장을 차례로 받습니다. 카드마다 확인창이 한 번씩 뜹니다. 한 장만 필요하면 그 카드 옆의 <b>PNG 저장</b>을, 굽기 전에 눈으로 확인하려면 <b>미리보기</b>를 누르세요.</p>
     <p><b>글씨체</b> — Noto Sans KR을 파일 안에 심어 두었습니다. 어떤 기기에서 열어도, 내보낸 PNG에서도 같은 글씨체가 나옵니다. 자간·행간·좌표는 Figma 파일 <span class="mono">클로드 연결</span>의 대표 커버·대표 본문·대표 클로징 값 그대로이고, 고친 내용은 이 브라우저에 자동 저장됩니다.</p>
@@ -297,8 +338,7 @@ function fontCSSFor(text){
 const CARD_CSS = `
 .card{position:relative;width:1080px;height:1350px;overflow:hidden;background:#0B0B0D;
   font-family:'Noto Sans KR',sans-serif;color:#fff}
-.card .photo{position:absolute;left:0;top:0;width:1080px;height:1350px;
-  background-repeat:no-repeat;background-size:cover;transform-origin:50% 50%}
+.card .photo{position:absolute;background-repeat:no-repeat;background-size:cover;background-position:center}
 .card .grad{position:absolute;left:0;top:0;width:1080px;height:1350px}
 .card .tbox{position:absolute;display:flex}
 .card .te{width:100%;white-space:pre-wrap;word-break:keep-all;overflow-wrap:break-word;outline:none}
@@ -356,11 +396,34 @@ const PH = {
 const DECK = JSON.parse(document.getElementById('deck').textContent);
 const KEY = DECK.key || 'readandlive-blank';
 
+/* 카드 크기. 밖으로 나간 사진을 보여줄 여백은 카드마다 다르게 잡는다 —
+   가로로 넓은 사진을 세로 카드에 꽉 채우면 옆으로 아주 많이 남고,
+   세로 사진이면 거의 안 남는다. 고정 여백은 한쪽에선 손잡이가 화면
+   밖으로 나가고 다른 쪽에선 공간만 낭비한다. */
+const CW = 1080, CH = 1350;
+const BASE_PAD = 60, PAD_MARGIN = 40;
+const MINBOX = 60;
+
+function padFor(s){
+  const over = Math.max(0, -s.bx, -s.by, s.bx + s.bw - CW, s.by + s.bh - CH);
+  return Math.max(BASE_PAD, Math.ceil(over) + PAD_MARGIN);
+}
+
+/* 사진이 카드를 꽉 채우는 상자 / 사진 전체가 카드 안에 들어오는 상자 */
+function fitBox(iw, ih, mode){
+  if(!iw || !ih) return { bx:0, by:0, bw:CW, bh:CH };
+  const k = mode === 'contain'
+    ? Math.min(CW / iw, CH / ih)
+    : Math.max(CW / iw, CH / ih);
+  const bw = Math.round(iw * k), bh = Math.round(ih * k);
+  return { bx: Math.round((CW - bw) / 2), by: Math.round((CH - bh) / 2), bw, bh };
+}
+
 const DEFAULT_STATE = () => DEFS.map((d, i) => ({
   a: (DECK.cards[i] && DECK.cards[i].a) || '',
   b: (DECK.cards[i] && DECK.cards[i].b) || '',
   credit:'PHOTO @UNSPLASH',
-  img:'', px:50, py:50, zoom:100,
+  img:'', iw:0, ih:0, bx:0, by:0, bw:CW, bh:CH,
   top: d.type==='body' ? 55 : 72,
   bot: d.type==='body' ? 35 : 12,
 }));
@@ -369,6 +432,14 @@ let state;
 try{ state = JSON.parse(localStorage.getItem(KEY)) || DEFAULT_STATE(); }
 catch(e){ state = DEFAULT_STATE(); }
 if(!Array.isArray(state) || state.length !== 7) state = DEFAULT_STATE();
+
+/* 예전 저장분(px/py/zoom 방식)을 상자 방식으로 옮긴다 */
+state.forEach(s=>{
+  if(typeof s.bw !== 'number' || !(s.bw > 0)){
+    Object.assign(s, { bx:0, by:0, bw:CW, bh:CH });
+    delete s.px; delete s.py; delete s.zoom;
+  }
+});
 
 let saveTimer;
 function save(){
@@ -500,12 +571,57 @@ function buildCard(i){
 
 function paint(i){
   const s = state[i], card = cards[i];
+  const url = s.img ? `url("${s.img}")` : 'none';
+  const pad = pads[i] ?? BASE_PAD;
+
+  /* 카드 안의 실제 렌더 — 카드 좌표계 */
   const photo = card.querySelector('.photo');
-  photo.style.backgroundImage = s.img ? `url("${s.img}")` : 'none';
-  photo.style.backgroundPosition = `${s.px}% ${s.py}%`;
-  photo.style.transform = `scale(${s.zoom/100})`;
+  photo.style.backgroundImage = url;
+  photo.style.left = s.bx + 'px';
+  photo.style.top = s.by + 'px';
+  photo.style.width = s.bw + 'px';
+  photo.style.height = s.bh + 'px';
   card.querySelector('.grad').style.background = gradient(s.top, s.bot);
+
+  /* 무대 좌표계 = 카드 좌표 + 여백. 여백은 이 사진이 카드 밖으로
+     얼마나 나가 있는지에 맞춰 카드마다 다르다 (refitStage 가 정한다). */
+  const g = ghosts[i], f = frames[i];
+  if(g){
+    g.style.backgroundImage = url;
+    g.style.left = (s.bx + pad) + 'px';
+    g.style.top = (s.by + pad) + 'px';
+    g.style.width = s.bw + 'px';
+    g.style.height = s.bh + 'px';
+  }
+  if(f){
+    f.style.left = (s.bx + pad) + 'px';
+    f.style.top = (s.by + pad) + 'px';
+    f.style.width = s.bw + 'px';
+    f.style.height = s.bh + 'px';
+    f.querySelector('.size').textContent = `${Math.round(s.bw)} × ${Math.round(s.bh)}`;
+  }
   if(stages[i]) stages[i].classList.toggle('hasphoto', !!s.img);
+  if(sizeOut[i]) sizeOut[i].textContent = s.img ? `${Math.round(s.bw)} × ${Math.round(s.bh)} px` : '사진 없음';
+}
+
+/* 사진 상자가 바뀔 때마다(불러오기, 맞춤 버튼, 드래그 끝) 호출한다.
+   여백 폭을 다시 재고, 무대·카드 위치·배율을 거기 맞춰 다시 잡은 뒤 그린다.
+   드래그 도중에는 부르지 않는다 — 무대 크기가 손 밑에서 바뀌면 손잡이가
+   화면에서 미끄러진다. */
+function refitStage(i){
+  const s = state[i], stage = stages[i], scaler = scalers[i];
+  if(!stage || !scaler) return;
+  const pad = padFor(s);
+  pads[i] = pad;
+  const sw = CW + pad * 2, sh = CH + pad * 2;
+  stage.style.aspectRatio = `${sw} / ${sh}`;
+  scaler.style.width = sw + 'px';
+  scaler.style.height = sh + 'px';
+  if(cardwraps[i]){ cardwraps[i].style.left = pad + 'px'; cardwraps[i].style.top = pad + 'px'; }
+  const k = stage.clientWidth ? stage.clientWidth / sw : 1;
+  stage.style.setProperty('--sc', k);
+  scaler.style.transform = `scale(${k})`;
+  paint(i);
 }
 
 /* 넘침 검사 */
@@ -540,10 +656,17 @@ function setImage(i, file){
   if(!file || !file.type.startsWith('image/')) return;
   const fr = new FileReader();
   fr.onload = () => {
-    state[i].img = fr.result; state[i].px = 50; state[i].py = 50;
-    paint(i); save();
-    setActive(i);
-    stat(`${DEFS[i].frame} 에 사진을 넣었습니다.`);
+    const probe = new Image();
+    probe.onload = () => {
+      const s = state[i];
+      s.img = fr.result;
+      s.iw = probe.naturalWidth; s.ih = probe.naturalHeight;
+      Object.assign(s, fitBox(s.iw, s.ih, 'cover'));   // 처음에는 카드를 꽉 채운다
+      refitStage(i); save(); setActive(i);
+      stat(`${DEFS[i].frame} 에 사진을 넣었습니다. 상자를 끌어 옮기고 모서리로 크기를 바꾸세요.`);
+    };
+    probe.onerror = () => stat('사진을 읽지 못했습니다.', true);
+    probe.src = fr.result;
   };
   fr.onerror = () => stat('사진을 읽지 못했습니다.', true);
   fr.readAsDataURL(file);
@@ -594,17 +717,40 @@ function buildPanel(i){
   pick.addEventListener('click', ()=> file.click());
   const clear = document.createElement('button');
   clear.className = 'ghost'; clear.textContent = '사진 빼기';
-  clear.addEventListener('click', ()=>{ s.img=''; s.zoom=100; s.px=50; s.py=50; paint(i); sync(); save(); });
+  clear.addEventListener('click', ()=>{
+    Object.assign(s, { img:'', iw:0, ih:0, bx:0, by:0, bw:CW, bh:CH });
+    refitStage(i); sync(); save();
+  });
   const one = document.createElement('button');
   one.className = 'btn-save1'; one.textContent = 'PNG 저장';
   one.addEventListener('click', async ()=>{ one.disabled = true; await saveOne(i); one.disabled = false; });
   row.append(clip, pick, clear, one, file);
   p.appendChild(row);
 
+  /* 사진 상자 — 숫자로 보여주고, 흔한 두 배치를 버튼으로 둔다 */
+  const boxRow = document.createElement('div');
+  boxRow.className = 'field';
+  const boxLab = document.createElement('label');
+  boxLab.textContent = '사진 상자';
+  const boxVal = document.createElement('div');
+  boxVal.className = 'boxval mono';
+  sizeOut[i] = boxVal;
+  const fitRow = document.createElement('div');
+  fitRow.className = 'btnrow';
+  [['카드 채우기','cover'], ['전체 보이기','contain']].forEach(([label, mode])=>{
+    const b = document.createElement('button');
+    b.textContent = label;
+    b.addEventListener('click', ()=>{
+      if(!s.img) return;
+      Object.assign(s, fitBox(s.iw, s.ih, mode));
+      refitStage(i); save();
+    });
+    fitRow.appendChild(b);
+  });
+  boxRow.append(boxLab, boxVal, fitRow);
+  p.appendChild(boxRow);
+
   const sliders = [
-    ['확대', 'zoom', 100, 260],
-    ['가로 위치', 'px', 0, 100],
-    ['세로 위치', 'py', 0, 100],
     ['위 어둡기', 'top', 0, 100],
     ['아래 어둡기', 'bot', 0, 100],
   ];
@@ -641,7 +787,8 @@ function buildPanel(i){
   return {panel:p, sync};
 }
 
-const cards = [], flags = [], syncs = [], stages = [];
+const cards = [], flags = [], syncs = [], stages = [], ghosts = [], frames = [], sizeOut = [],
+      scalers = [], cardwraps = [], pads = [];
 let active = 0;
 
 /* 붙여넣기가 어느 카드로 갈지 눈에 보이게 한다 */
@@ -663,12 +810,41 @@ DEFS.forEach((d, i)=>{
   const stage = document.createElement('div');
   stage.className = 'stage';
   stages[i] = stage;
+
   const scaler = document.createElement('div');
   scaler.className = 'scaler';
+  scalers[i] = scaler;
+
+  const mat = document.createElement('div');
+  mat.className = 'mat';
+
+  const ghost = document.createElement('div');
+  ghost.className = 'ghost';
+  ghosts[i] = ghost;
+
+  const cardwrap = document.createElement('div');
+  cardwrap.className = 'cardwrap';
+  cardwraps[i] = cardwrap;
   const card = buildCard(i);
   cards[i] = card;
-  scaler.appendChild(card);
+  cardwrap.appendChild(card);
+
+  const frame = document.createElement('div');
+  frame.className = 'frame';
+  frames[i] = frame;
+  ['nw','n','ne','e','se','s','sw','w'].forEach(h=>{
+    const el = document.createElement('div');
+    el.className = 'h';
+    el.dataset.h = h;
+    frame.appendChild(el);
+  });
+  const sizeTag = document.createElement('div');
+  sizeTag.className = 'size mono';
+  frame.appendChild(sizeTag);
+
+  scaler.append(mat, ghost, cardwrap, frame);
   stage.appendChild(scaler);
+
   const cue = document.createElement('div');
   cue.className = 'cue';
   cue.innerHTML = '<span>사진을 붙여넣으세요</span><span class="k">Ctrl / ⌘ + V</span>';
@@ -689,29 +865,100 @@ DEFS.forEach((d, i)=>{
   });
   stage.addEventListener('pointerdown', ()=> setActive(i));
 
-  let drag = null;
-  card.addEventListener('pointerdown', e=>{
-    if(e.target.isContentEditable || !state[i].img) return;
-    drag = {x:e.clientX, y:e.clientY, px:state[i].px, py:state[i].py, w:stage.clientWidth, h:stage.clientHeight};
-    card.setPointerCapture(e.pointerId);
-  });
-  card.addEventListener('pointermove', e=>{
-    if(!drag) return;
-    const s = state[i];
-    s.px = Math.max(0, Math.min(100, drag.px - (e.clientX - drag.x) / drag.w * 100));
-    s.py = Math.max(0, Math.min(100, drag.py - (e.clientY - drag.y) / drag.h * 100));
-    paint(i); syncs[i]();
-  });
-  const endDrag = ()=>{ if(drag){ drag = null; save(); } };
-  card.addEventListener('pointerup', endDrag);
-  card.addEventListener('pointercancel', endDrag);
+  /* ── 상자 옮기기 / 크기 바꾸기 ─────────────────────────────
+     화면 좌표 이동량을 무대 배율로 나눠 카드 좌표 이동량으로 바꾼다.
+     손잡이는 잡은 모서리만 움직이고 반대편은 고정한다.
+  ──────────────────────────────────────────────────────────── */
+  let grab = null;
 
-  paint(i);
+  function begin(e, handle){
+    const s = state[i];
+    if(!s.img) return;
+    grab = {
+      h: handle,
+      sx: e.clientX, sy: e.clientY,
+      bx: s.bx, by: s.by, bw: s.bw, bh: s.bh,
+      k: stage.clientWidth / (CW + (pads[i] ?? BASE_PAD) * 2),
+      id: e.pointerId,
+      target: e.currentTarget,
+    };
+    e.currentTarget.setPointerCapture(e.pointerId);
+    e.preventDefault();
+    setActive(i);
+    stage.classList.add('sizing');
+  }
+
+  function move(e){
+    if(!grab) return;
+    const s = state[i];
+    const dx = (e.clientX - grab.sx) / grab.k;
+    const dy = (e.clientY - grab.sy) / grab.k;
+    const h = grab.h;
+
+    if(h === 'move'){
+      s.bx = Math.round(grab.bx + dx);
+      s.by = Math.round(grab.by + dy);
+    } else {
+      /* 잡지 않은 변은 그대로 둔다 */
+      let l = grab.bx, t = grab.by, r = grab.bx + grab.bw, b = grab.by + grab.bh;
+      if(h.includes('w')) l = Math.min(grab.bx + dx, r - MINBOX);
+      if(h.includes('e')) r = Math.max(grab.bx + grab.bw + dx, l + MINBOX);
+      if(h.includes('n')) t = Math.min(grab.by + dy, b - MINBOX);
+      if(h.includes('s')) b = Math.max(grab.by + grab.bh + dy, t + MINBOX);
+
+      /* 모서리는 사진 비율을 지킨다. 변은 자유롭게 — 잘라내기가 된다. */
+      const corner = h.length === 2;
+      if(corner && s.iw && s.ih){
+        const ratio = s.iw / s.ih;
+        let w = r - l, hgt = b - t;
+        if(w / hgt > ratio) hgt = w / ratio; else w = hgt * ratio;
+        if(h.includes('w')) l = r - w; else r = l + w;
+        if(h.includes('n')) t = b - hgt; else b = t + hgt;
+      }
+      s.bx = Math.round(l); s.by = Math.round(t);
+      s.bw = Math.round(r - l); s.bh = Math.round(b - t);
+    }
+    paint(i);
+  }
+
+  function end(){
+    if(!grab) return;
+    try{ grab.target.releasePointerCapture(grab.id); }catch(err){}
+    grab = null;
+    stage.classList.remove('sizing');
+    /* 여백을 이번에 끝난 상자에 맞춰 다시 잰다. 드래그 도중에는 하지 않는다 —
+       무대 크기가 손 밑에서 바뀌면 손잡이가 화면에서 미끄러진다. */
+    refitStage(i);
+    save();
+  }
+
+  /* 카드 위(글자 아닌 곳)와 카드 밖 사진 위에서 끌면 옮기기 */
+  card.addEventListener('pointerdown', e=>{ if(!e.target.isContentEditable) begin(e, 'move'); });
+  ghost.addEventListener('pointerdown', e=> begin(e, 'move'));
+  frame.querySelectorAll('.h').forEach(el=>{
+    el.addEventListener('pointerdown', e=>{ e.stopPropagation(); begin(e, el.dataset.h); });
+    el.addEventListener('pointermove', move);
+    el.addEventListener('pointerup', end);
+    el.addEventListener('pointercancel', end);
+  });
+  [card, ghost].forEach(el=>{
+    el.addEventListener('pointermove', move);
+    el.addEventListener('pointerup', end);
+    el.addEventListener('pointercancel', end);
+  });
+
+  refitStage(i);
 });
 
 function fit(){
-  document.querySelectorAll('.stage').forEach(st=>{
-    st.querySelector('.scaler').style.transform = `scale(${st.clientWidth / 1080})`;
+  /* 창 크기만 바뀐 경우다 — 여백(pad)은 그대로 두고 배율만 다시 잰다. */
+  stages.forEach((st, i)=>{
+    const pad = pads[i] ?? BASE_PAD;
+    const sw = CW + pad * 2;
+    const k = st.clientWidth / sw;
+    st.querySelector('.scaler').style.transform = `scale(${k})`;
+    /* 손잡이와 치수 글자는 배율로 나눠 화면상 크기를 일정하게 유지한다 */
+    st.style.setProperty('--sc', k);
   });
   cards.forEach((_, i)=> check(i));
 }
@@ -1015,7 +1262,7 @@ document.getElementById('btn-reset').addEventListener('click', ()=>{
   if(!confirm('7장의 글과 사진을 모두 지웁니다. 계속할까요?')) return;
   state = DEFAULT_STATE();
   redrawText();
-  cards.forEach((_, i)=>{ paint(i); syncs[i](); });
+  cards.forEach((_, i)=>{ refitStage(i); syncs[i](); });
   save();
 });
 
