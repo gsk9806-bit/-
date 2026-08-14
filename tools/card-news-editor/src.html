@@ -1,21 +1,23 @@
 <title>READ AND LIVE 카드 편집기</title>
 
 <!-- ── 회차 문구 ────────────────────────────────────────────────
-     태도2 스크립트를 여기에 넣으면 편집기가 그 상태로 열린다.
+     태도2 스킬 결과를 여기 한 곳에만 채우면 편집기가 그 상태로 열린다.
      a = 헤드라인 (클로징은 빈 문자열), b = 본문 / 서브카피 / 클로징 문장
+     p = 사진 추천 — 태도2 블록4(이미지 방향 가이드)의 피사체·구도 / 톤 /
+         검색 키워드 세 줄을 그대로 옮긴다. 실제 사진은 찾아 넣지 않는다.
      key 는 회차마다 바꿔서 이전 회차 저장분과 섞이지 않게 한다.
 ─────────────────────────────────────────────────────────────── -->
 <script id="deck" type="application/json">
 {
   "key": "readandlive-blank",
   "cards": [
-    { "a": "", "b": "" },
-    { "a": "", "b": "" },
-    { "a": "", "b": "" },
-    { "a": "", "b": "" },
-    { "a": "", "b": "" },
-    { "a": "", "b": "" },
-    { "a": "", "b": "" }
+    { "a": "", "b": "", "p": "" },
+    { "a": "", "b": "", "p": "" },
+    { "a": "", "b": "", "p": "" },
+    { "a": "", "b": "", "p": "" },
+    { "a": "", "b": "", "p": "" },
+    { "a": "", "b": "", "p": "" },
+    { "a": "", "b": "", "p": "" }
   ]
 }
 </script>
@@ -202,6 +204,11 @@ main{max-width:1180px;margin:0 auto;padding:28px 24px 96px;display:flex;flex-dir
 input[type=range]{width:100%;accent-color:var(--accent)}
 .val{font-size:12px;color:var(--ink-2);min-width:44px;text-align:right}
 .boxval{font-size:13px;color:var(--ink);font-weight:600}
+.recbody{
+  font-size:13px;line-height:1.6;color:var(--ink-2);white-space:pre-wrap;
+  background:var(--panel-2);border:1px solid var(--line);border-radius:7px;
+  padding:9px 11px;
+}
 .btnrow{display:flex;flex-wrap:wrap;gap:8px}
 .flag{
   display:none;font-size:12.5px;font-weight:700;line-height:1.5;
@@ -249,7 +256,6 @@ textarea:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
       <div class="sub mono">1080 × 1350 · 커버 1 · 본문 5 · 클로징 1 · Noto Sans KR</div>
     </div>
     <div class="tools">
-      <button id="btn-script">태도2 스크립트 넣기</button>
       <button id="btn-copy">텍스트 복사</button>
       <button id="btn-export">미리보기</button>
       <button id="btn-saveall" class="primary">PNG 7장 저장</button>
@@ -268,6 +274,7 @@ textarea:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
     <p><b>Ctrl</b>/<b>⌘</b>+<b>V</b>를 눌렀는데 위쪽에 아무 메시지도 뜨지 않으면, 이 화면이 키 입력을 받지 못한 것입니다. 카드를 한 번 더 누르고 다시 시도하거나, <b>클립보드에서</b> 버튼을 누르세요. 파일을 카드 위로 끌어다 놓거나 <b>사진 넣기</b>로 골라도 됩니다.</p>
     <p><b>PNG</b> — <b>PNG 7장 저장</b>을 누르면 1080×1350 PNG 일곱 장을 차례로 받습니다. 카드마다 확인창이 한 번씩 뜹니다. 한 장만 필요하면 그 카드 옆의 <b>PNG 저장</b>을, 굽기 전에 눈으로 확인하려면 <b>미리보기</b>를 누르세요.</p>
     <p><b>글씨체</b> — Noto Sans KR을 파일 안에 심어 두었습니다. 어떤 기기에서 열어도, 내보낸 PNG에서도 같은 글씨체가 나옵니다. 자간·행간·좌표는 Figma 파일 <span class="mono">클로드 연결</span>의 대표 커버·대표 본문·대표 클로징 값 그대로이고, 고친 내용은 이 브라우저에 자동 저장됩니다.</p>
+    <p><b>사진 추천</b> — 태도2가 카드마다 준 이미지 방향·검색 키워드가 있으면 그 카드 패널에 그대로 표시됩니다. 실제 사진을 찾아 오는 건 이 편집기의 역할이 아닙니다.</p>
   </div>
   <div id="rows" class="rows"></div>
 </main>
@@ -278,19 +285,6 @@ textarea:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
     <p>1080×1350 PNG입니다. 아래 <b>PNG 저장</b>을 누르면 파일로 받습니다. 버튼이 보이지 않으면 이미지를 길게 누르거나 오른쪽 클릭해서 <b>이미지를 다른 이름으로 저장</b>하세요.</p>
     <div class="shots" id="shots"></div>
     <div class="sheetfoot"><button id="shots-close">닫기</button></div>
-  </div>
-</div>
-
-<div class="modal" id="modal-script">
-  <div class="sheet">
-    <h3>태도2 스크립트 넣기</h3>
-    <p>아래 형식으로 붙여넣고 <b>적용</b>을 누르면 7장에 한 번에 들어갑니다. 카드 사이는 <span class="mono">---</span> 한 줄로 나눕니다. 첫 줄이 헤드라인, 나머지가 본문입니다.</p>
-    <textarea id="script-in" spellcheck="false"></textarea>
-    <div class="sheetfoot">
-      <button id="script-sample">형식 예시 넣기</button>
-      <button id="script-cancel">취소</button>
-      <button id="script-apply" class="primary">적용</button>
-    </div>
   </div>
 </div>
 
@@ -422,6 +416,7 @@ function fitBox(iw, ih, mode){
 const DEFAULT_STATE = () => DEFS.map((d, i) => ({
   a: (DECK.cards[i] && DECK.cards[i].a) || '',
   b: (DECK.cards[i] && DECK.cards[i].b) || '',
+  p: (DECK.cards[i] && DECK.cards[i].p) || '',
   credit:'PHOTO @UNSPLASH',
   img:'', iw:0, ih:0, bx:0, by:0, bw:CW, bh:CH,
   top: d.type==='body' ? 55 : 72,
@@ -702,6 +697,21 @@ function buildPanel(i){
   flag.className = 'flag';
   flags[i] = flag;
   p.appendChild(flag);
+
+  /* 사진 추천 — 태도2 블록4(이미지 방향 가이드)를 그대로 보여준다.
+     실제 사진을 찾는 건 이 편집기가 아니라 사람이 한다. 문구가 없으면
+     아예 표시하지 않는다. */
+  if(s.p){
+    const rec = document.createElement('div');
+    rec.className = 'field';
+    const recLab = document.createElement('label');
+    recLab.textContent = '사진 추천';
+    const recBody = document.createElement('div');
+    recBody.className = 'recbody';
+    recBody.textContent = s.p;
+    rec.append(recLab, recBody);
+    p.appendChild(rec);
+  }
 
   const row = document.createElement('div');
   row.className = 'btnrow';
@@ -1202,48 +1212,21 @@ document.getElementById('btn-copy').addEventListener('click', async ()=>{
     const s = state[i];
     return `[${i+1}] ${d.frame}\n${s.a ? s.a + '\n' : ''}${s.b}`;
   }).join('\n\n---\n\n');
+  const b = document.getElementById('btn-copy');
   try{
     await navigator.clipboard.writeText(txt);
-    const b = document.getElementById('btn-copy');
-    b.textContent = '복사됨';
-    setTimeout(()=> b.textContent = '텍스트 복사', 1400);
   }catch(e){
-    document.getElementById('script-in').value = txt;
-    document.getElementById('modal-script').classList.add('on');
+    /* 오래된 브라우저나 권한이 막힌 경우의 대체 경로 */
+    const ta = document.createElement('textarea');
+    ta.value = txt; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try{ document.execCommand('copy'); }
+    catch(err){ stat('복사에 실패했습니다. 카드 글자를 직접 선택해 복사해 주세요.', true); ta.remove(); return; }
+    ta.remove();
   }
+  b.textContent = '복사됨';
+  setTimeout(()=> b.textContent = '텍스트 복사', 1400);
 });
-
-const modalScript = document.getElementById('modal-script');
-document.getElementById('btn-script').addEventListener('click', ()=>{
-  document.getElementById('script-in').value = '';
-  modalScript.classList.add('on');
-});
-document.getElementById('script-cancel').addEventListener('click', ()=> modalScript.classList.remove('on'));
-document.getElementById('script-sample').addEventListener('click', ()=>{
-  document.getElementById('script-in').value = DEFS.map((d, i)=>{
-    if(d.type === 'cover')   return `[1] ${d.frame}\n커버 헤드라인\n커버 서브카피 한 줄`;
-    if(d.type === 'closing') return `[7] ${d.frame}\n커버 서브카피 한 줄`;
-    return `[${i+1}] ${d.frame}\n헤드라인 한 줄\n본문 세 문장을 줄바꿈 없이 이어 씁니다.`;
-  }).join('\n\n---\n\n');
-});
-document.getElementById('script-apply').addEventListener('click', ()=>{
-  const raw = document.getElementById('script-in').value;
-  const blocks = raw.split(/\n\s*-{3,}\s*\n/).map(b=>b.trim()).filter(Boolean);
-  if(blocks.length !== 7){
-    alert(`카드가 ${blocks.length}개로 나뉘었습니다. --- 로 구분된 덩어리가 정확히 7개여야 합니다.`);
-    return;
-  }
-  blocks.forEach((b, i)=>{
-    const lines = b.split('\n').map(l=>l.trim()).filter(Boolean);
-    if(/^\[\d\]/.test(lines[0])) lines.shift();
-    if(DEFS[i].type === 'closing'){ state[i].a = ''; state[i].b = lines.join(' '); }
-    else { state[i].a = lines.shift() || ''; state[i].b = lines.join(' '); }
-  });
-  modalScript.classList.remove('on');
-  redrawText();
-  save();
-});
-modalScript.addEventListener('click', e=>{ if(e.target === modalScript) modalScript.classList.remove('on'); });
 
 function redrawText(){
   cards.forEach((card, i)=>{
