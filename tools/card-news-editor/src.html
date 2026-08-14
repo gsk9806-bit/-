@@ -223,7 +223,8 @@ textarea:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 <main>
   <div class="note">
     <h2>쓰는 법</h2>
-    <p><b>사진</b> — 카드를 한 번 누르면 테두리가 생깁니다. 그 상태에서 <kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>V</kbd>를 누르면 복사해 둔 사진이 그 카드로 들어갑니다. 글자를 고치는 중에 붙여넣어도 사진으로 받습니다. 파일을 카드 위로 끌어다 놓거나 <b>사진 넣기</b>를 눌러도 됩니다. 넣은 사진은 카드 위에서 끌어 위치를 잡고 슬라이더로 확대합니다.</p>
+    <p><b>사진</b> — 카드를 한 번 누르면 테두리가 생깁니다. 그 상태에서 <kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>V</kbd>를 누르면 복사해 둔 사진이 그 카드로 들어갑니다. 글자를 고치는 중에 붙여넣어도 사진으로 받습니다. 넣은 사진은 카드 위에서 끌어 위치를 잡고 슬라이더로 확대합니다.</p>
+    <p><b>Ctrl</b>/<b>⌘</b>+<b>V</b>를 눌렀는데 위쪽에 아무 메시지도 뜨지 않으면, 이 화면이 키 입력을 받지 못한 것입니다. 카드를 한 번 더 누르고 다시 시도하거나, <b>클립보드에서</b> 버튼을 누르세요. 파일을 카드 위로 끌어다 놓거나 <b>사진 넣기</b>로 골라도 됩니다.</p>
     <p><b>PNG</b> — <b>PNG 7장 저장</b>을 누르면 1080×1350 PNG 일곱 장을 차례로 받습니다. 카드마다 확인창이 한 번씩 뜹니다. 한 장만 필요하면 그 카드 옆의 <b>PNG 저장</b>을, 굽기 전에 눈으로 확인하려면 <b>미리보기</b>를 누르세요.</p>
     <p><b>글씨체</b> — Noto Sans KR을 파일 안에 심어 두었습니다. 어떤 기기에서 열어도, 내보낸 PNG에서도 같은 글씨체가 나옵니다. 자간·행간·좌표는 Figma 파일 <span class="mono">클로드 연결</span>의 대표 커버·대표 본문·대표 클로징 값 그대로이고, 고친 내용은 이 브라우저에 자동 저장됩니다.</p>
   </div>
@@ -538,8 +539,35 @@ let guard = false;
 function setImage(i, file){
   if(!file || !file.type.startsWith('image/')) return;
   const fr = new FileReader();
-  fr.onload = () => { state[i].img = fr.result; state[i].px = 50; state[i].py = 50; paint(i); save(); };
+  fr.onload = () => {
+    state[i].img = fr.result; state[i].px = 50; state[i].py = 50;
+    paint(i); save();
+    setActive(i);
+    stat(`${DEFS[i].frame} 에 사진을 넣었습니다.`);
+  };
+  fr.onerror = () => stat('사진을 읽지 못했습니다.', true);
   fr.readAsDataURL(file);
+}
+
+/* Ctrl+V 가 이 페이지까지 오지 않을 때를 위한 우회로.
+   버튼을 누르면 이 프레임이 확실히 포커스를 갖고, 클립보드를 직접 읽는다. */
+async function pasteFromClipboard(i){
+  if(!navigator.clipboard || !navigator.clipboard.read){
+    stat('이 브라우저는 클립보드 읽기를 지원하지 않습니다. 사진 넣기로 파일을 고르세요.', true);
+    return;
+  }
+  try{
+    for(const item of await navigator.clipboard.read()){
+      const type = item.types.find(t => t.startsWith('image/'));
+      if(type){
+        setImage(i, new File([await item.getType(type)], 'clipboard.png', { type }));
+        return;
+      }
+    }
+    stat('클립보드에 사진이 없습니다. 사진을 먼저 복사해 주세요.', true);
+  }catch(err){
+    stat('클립보드를 읽지 못했습니다. 카드를 누르고 Ctrl/⌘+V 를 쓰거나, 사진 넣기로 파일을 고르세요.', true);
+  }
 }
 
 function buildPanel(i){
@@ -554,6 +582,10 @@ function buildPanel(i){
 
   const row = document.createElement('div');
   row.className = 'btnrow';
+  const clip = document.createElement('button');
+  clip.textContent = '클립보드에서';
+  clip.title = 'Ctrl/⌘+V 가 듣지 않을 때';
+  clip.addEventListener('click', async ()=>{ clip.disabled = true; await pasteFromClipboard(i); clip.disabled = false; });
   const pick = document.createElement('button');
   pick.textContent = '사진 넣기';
   const file = document.createElement('input');
@@ -566,7 +598,7 @@ function buildPanel(i){
   const one = document.createElement('button');
   one.className = 'btn-save1'; one.textContent = 'PNG 저장';
   one.addEventListener('click', async ()=>{ one.disabled = true; await saveOne(i); one.disabled = false; });
-  row.append(pick, clear, one, file);
+  row.append(clip, pick, clear, one, file);
   p.appendChild(row);
 
   const sliders = [
@@ -695,29 +727,41 @@ window.addEventListener('paste', e=>{
   const dt = e.clipboardData;
   if(!dt) return;
 
-  const file = [...(dt.items||[])]
-    .filter(it => it.kind === 'file' && it.type.startsWith('image/'))
-    .map(it => it.getAsFile())
-    .find(Boolean);
+  /* items 와 files 를 모두 본다 — 브라우저마다 채우는 쪽이 다르다 */
+  const file = [...(dt.items || [])]
+      .filter(it => it.kind === 'file' && it.type.startsWith('image/'))
+      .map(it => it.getAsFile())
+      .find(Boolean)
+    || [...(dt.files || [])].find(f => f.type.startsWith('image/'));
+
+  const el = document.activeElement;
 
   if(file){
     e.preventDefault();
     e.stopPropagation();
-    const el = document.activeElement;
-    const owner = el && el.closest ? el.closest('.card') : null;
-    setImage(owner ? +owner.dataset.idx : active, file);
+    /* 마지막으로 고른 카드에 넣는다. activeElement 를 보면 안 된다 —
+       사진 영역처럼 포커스를 받지 않는 곳을 누르면 커서는 직전에 글자를
+       고치던 '다른 카드'에 남아 있어서, 엉뚱한 카드로 사진이 들어간다.
+       active 는 카드 클릭과 글자 상자 포커스 양쪽에서 갱신된다. */
+    setImage(active, file);
     return;
   }
 
-  const el = document.activeElement;
+  const t = dt.getData('text');
+
   if(el && el.isContentEditable && el.classList.contains('te')){
-    const t = dt.getData('text');
     if(t){
       e.preventDefault();
       e.stopPropagation();
       insertInto(el, t.replace(/\s*\n\s*/g, ' ').trim());
     }
+    return;
   }
+
+  /* 붙여넣기는 여기까지 왔는데 사진이 아니었다. 아무 반응도 없으면
+     Ctrl+V 가 안 먹은 건지 사진을 안 복사한 건지 구분할 수 없다. */
+  stat(t ? '클립보드에 있는 건 글자입니다. 사진을 복사한 뒤 다시 눌러 주세요.'
+         : '클립보드에 사진이 없습니다. 사진을 복사한 뒤 다시 눌러 주세요.', true);
 }, true);
 
 /* ══════════════════════════════════════════════════════════
