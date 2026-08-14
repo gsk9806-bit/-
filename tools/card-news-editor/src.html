@@ -1,4 +1,25 @@
 <title>READ AND LIVE 카드 편집기</title>
+
+<!-- ── 회차 문구 ────────────────────────────────────────────────
+     태도2 스크립트를 여기에 넣으면 편집기가 그 상태로 열린다.
+     a = 헤드라인 (클로징은 빈 문자열), b = 본문 / 서브카피 / 클로징 문장
+     key 는 회차마다 바꿔서 이전 회차 저장분과 섞이지 않게 한다.
+─────────────────────────────────────────────────────────────── -->
+<script id="deck" type="application/json">
+{
+  "key": "readandlive-blank",
+  "cards": [
+    { "a": "", "b": "" },
+    { "a": "", "b": "" },
+    { "a": "", "b": "" },
+    { "a": "", "b": "" },
+    { "a": "", "b": "" },
+    { "a": "", "b": "" },
+    { "a": "", "b": "" }
+  ]
+}
+</script>
+
 <style>
 /* ─────────────  토큰  ───────────── */
 :root{
@@ -10,7 +31,6 @@
   --ink-2:#5C5D66;
   --ink-3:#8B8C95;
   --accent:#B4762A;
-  --accent-soft:#F0E3CE;
   --warn:#C0492A;
   --warn-soft:#F7E2DB;
   --shadow:0 1px 2px rgba(27,28,33,.06),0 8px 24px rgba(27,28,33,.07);
@@ -25,7 +45,6 @@
     --ink-2:#A2A4AF;
     --ink-3:#74767F;
     --accent:#D8A24A;
-    --accent-soft:#3A2E1B;
     --warn:#E4795A;
     --warn-soft:#3D2119;
     --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35);
@@ -40,7 +59,6 @@
   --ink-2:#A2A4AF;
   --ink-3:#74767F;
   --accent:#D8A24A;
-  --accent-soft:#3A2E1B;
   --warn:#E4795A;
   --warn-soft:#3D2119;
   --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35);
@@ -51,12 +69,13 @@ body{
   margin:0;
   background:var(--ground);
   color:var(--ink);
-  font-family:"Pretendard","Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",ui-sans-serif,system-ui,sans-serif;
+  font-family:"Noto Sans KR",sans-serif;
   font-size:15px;
   line-height:1.65;
   -webkit-font-smoothing:antialiased;
 }
-.mono{font-family:ui-monospace,"SF Mono","JetBrains Mono","Menlo",monospace;font-variant-numeric:tabular-nums}
+/* 프레임 이름과 수치는 실제 Figma 레이어 이름이라 코드처럼 둔다 */
+.mono{font-family:ui-monospace,"SF Mono","Menlo",monospace;font-variant-numeric:tabular-nums}
 
 /* ─────────────  헤더 / 툴바  ───────────── */
 header{
@@ -70,7 +89,7 @@ header{
 .brand .sub{font-size:12px;color:var(--ink-3);letter-spacing:.02em}
 .tools{display:flex;flex-wrap:wrap;gap:8px}
 button{
-  font:inherit;font-size:13px;font-weight:600;
+  font-family:inherit;font-size:13px;font-weight:700;
   padding:8px 14px;border-radius:7px;
   border:1px solid var(--line);
   background:var(--panel-2);color:var(--ink);
@@ -106,7 +125,6 @@ main{max-width:1180px;margin:0 auto;padding:28px 24px 96px;display:flex;flex-dir
 .eyebrow .frame{font-size:12.5px;color:var(--ink-2)}
 .eyebrow .role{font-size:12px;color:var(--ink-3);margin-left:auto}
 
-/* 카드 무대 — 1080×1350 을 축소해서 보여준다 */
 .stage{
   position:relative;width:100%;aspect-ratio:1080/1350;
   border-radius:6px;overflow:hidden;box-shadow:var(--shadow);
@@ -125,10 +143,8 @@ main{max-width:1180px;margin:0 auto;padding:28px 24px 96px;display:flex;flex-dir
 input[type=range]{width:100%;accent-color:var(--accent)}
 .val{font-size:12px;color:var(--ink-2);min-width:44px;text-align:right}
 .btnrow{display:flex;flex-wrap:wrap;gap:8px}
-.meter{font-size:12px;color:var(--ink-3);display:flex;justify-content:space-between;gap:10px}
-.meter b{font-weight:600;color:var(--ink-2)}
 .flag{
-  display:none;font-size:12.5px;font-weight:600;line-height:1.5;
+  display:none;font-size:12.5px;font-weight:700;line-height:1.5;
   padding:8px 11px;border-radius:7px;
   background:var(--warn-soft);color:var(--warn);border:1px solid color-mix(in srgb,var(--warn) 35%,transparent);
 }
@@ -154,7 +170,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .shot img{width:100%;border-radius:5px;border:1px solid var(--line);display:block}
 .shot span{font-size:11.5px;color:var(--ink-3)}
 textarea{
-  width:100%;min-height:260px;font:inherit;font-size:13px;line-height:1.7;
+  width:100%;min-height:260px;font-family:inherit;font-size:13px;line-height:1.7;
   padding:12px 14px;border-radius:8px;border:1px solid var(--line);
   background:var(--panel-2);color:var(--ink);resize:vertical;
 }
@@ -168,7 +184,7 @@ textarea:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
   <div class="hwrap">
     <div class="brand">
       <h1>READ AND LIVE 카드 편집기</h1>
-      <div class="sub mono">1080 × 1350 · 커버 1 · 본문 5 · 클로징 1</div>
+      <div class="sub mono">1080 × 1350 · 커버 1 · 본문 5 · 클로징 1 · Noto Sans KR</div>
     </div>
     <div class="tools">
       <button id="btn-script">태도2 스크립트 넣기</button>
@@ -184,7 +200,7 @@ textarea:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
   <div class="note">
     <h2>쓰는 법</h2>
     <p>카드 위의 글자를 직접 클릭해서 고칩니다. 사진은 카드를 한 번 누른 뒤 <kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>V</kbd>로 붙여넣거나, 파일을 카드 위로 끌어다 놓거나, 옆의 <b>사진 넣기</b>를 누릅니다. 넣은 사진은 카드 위에서 끌어 위치를 잡고 슬라이더로 확대합니다.</p>
-    <p>고친 내용은 이 브라우저에 자동 저장됩니다. Figma 파일 <span class="mono">클로드 연결</span>의 대표 커버·대표 본문·대표 클로징 규격(글자 크기·행간·자간·좌표)을 그대로 옮겨놓았습니다.</p>
+    <p>글씨체는 <b>Noto Sans KR</b>로 파일 안에 심어 두었습니다. 어떤 기기에서 열어도, 내보낸 PNG에서도 같은 글씨체가 나옵니다. 자간·행간·좌표는 Figma 파일 <span class="mono">클로드 연결</span>의 대표 커버·대표 본문·대표 클로징 값 그대로입니다. 고친 내용은 이 브라우저에 자동 저장됩니다.</p>
   </div>
   <div id="rows" class="rows"></div>
 </main>
@@ -211,14 +227,50 @@ textarea:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
   </div>
 </div>
 
+<script id="fonts" type="application/json">__FONTS__</script>
+
 <script>
+/* ══════════════════════════════════════════════════════════
+   Noto Sans KR — 가변 폰트(100~900) 서브셋을 파일에 심어 둔다.
+   화면과 PNG 내보내기가 같은 글리프를 쓴다.
+   ══════════════════════════════════════════════════════════ */
+const FACES = JSON.parse(document.getElementById('fonts').textContent);
+
+function faceRule(f){
+  return `@font-face{font-family:'Noto Sans KR';font-style:normal;font-weight:100 900;`
+       + `font-display:block;src:url(data:font/woff2;base64,${f.d}) format('woff2');unicode-range:${f.r};}`;
+}
+const fontStyle = document.createElement('style');
+fontStyle.textContent = FACES.map(faceRule).join('');
+document.head.appendChild(fontStyle);
+
+/* unicode-range 를 숫자 구간으로 미리 풀어 둔다 (내보내기 서브셋용) */
+FACES.forEach(f=>{
+  f.n = f.r.split(',').map(p=>{
+    const t = p.trim().replace(/^U\+/i, '');
+    if(t.includes('-')){ const [a,b] = t.split('-'); return [parseInt(a,16), parseInt(b,16)]; }
+    return [parseInt(t.replace(/\?/g,'0'),16), parseInt(t.replace(/\?/g,'f'),16)];
+  });
+});
+
+/* 카드에 실제로 쓰인 글자를 덮는 서브셋만 골라 낸다 */
+function fontCSSFor(text){
+  const pts = new Set();
+  for(const ch of text) pts.add(ch.codePointAt(0));
+  const need = FACES.filter(f => f.n.some(([a,b]) => {
+    for(const p of pts) if(p >= a && p <= b) return true;
+    return false;
+  }));
+  return need.map(faceRule).join('');
+}
+
 /* ══════════════════════════════════════════════════════════
    카드 CSS — 화면과 PNG 내보내기가 같은 규칙을 쓴다.
    좌표·크기는 Figma '클로드 연결' 파일의 대표 프레임 값 그대로.
    ══════════════════════════════════════════════════════════ */
 const CARD_CSS = `
 .card{position:relative;width:1080px;height:1350px;overflow:hidden;background:#0B0B0D;
-  font-family:"Pretendard","Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",sans-serif;color:#fff}
+  font-family:'Noto Sans KR',sans-serif;color:#fff}
 .card .photo{position:absolute;left:0;top:0;width:1080px;height:1350px;
   background-repeat:no-repeat;background-size:cover;transform-origin:50% 50%}
 .card .grad{position:absolute;left:0;top:0;width:1080px;height:1350px}
@@ -248,7 +300,6 @@ const CARD_CSS = `
 .card .wordmark .te{font-size:20px;line-height:30px;letter-spacing:.34em;font-weight:700;text-align:center}
 `;
 
-/* 화면 전용 보조 스타일 (내보내기에는 넣지 않는다) */
 const screenCSS = document.createElement('style');
 screenCSS.textContent = CARD_CSS + `
 .card .te[contenteditable]:hover{box-shadow:inset 0 0 0 2px rgba(216,162,74,.5)}
@@ -271,20 +322,23 @@ const DEFS = [
 ];
 
 const PH = {
-  cover:{a:'커버 헤드라인',       b:'커버 서브카피 — 클로징과 같은 문장'},
-  body:{ a:'헤드라인 한 줄',      b:'본문 세 문장을 줄바꿈 없이 한 단락으로.'},
-  closing:{a:'',                  b:'클로징 문장 — 커버 서브카피와 글자까지 동일하게.'},
+  cover:{a:'커버 헤드라인',  b:'커버 서브카피 — 클로징과 같은 문장'},
+  body:{ a:'헤드라인 한 줄', b:'본문 세 문장을 줄바꿈 없이 한 단락으로.'},
+  closing:{a:'',             b:'클로징 문장 — 커버 서브카피와 글자까지 동일하게.'},
 };
 
-const DEFAULT_STATE = () => DEFS.map(d => ({
-  a:'', b:'',
+const DECK = JSON.parse(document.getElementById('deck').textContent);
+const KEY = DECK.key || 'readandlive-blank';
+
+const DEFAULT_STATE = () => DEFS.map((d, i) => ({
+  a: (DECK.cards[i] && DECK.cards[i].a) || '',
+  b: (DECK.cards[i] && DECK.cards[i].b) || '',
   credit:'PHOTO @UNSPLASH',
   img:'', px:50, py:50, zoom:100,
   top: d.type==='body' ? 55 : 72,
   bot: d.type==='body' ? 35 : 12,
 }));
 
-const KEY = 'readandlive-cards-v1';
 let state;
 try{ state = JSON.parse(localStorage.getItem(KEY)) || DEFAULT_STATE(); }
 catch(e){ state = DEFAULT_STATE(); }
@@ -381,6 +435,7 @@ function paint(i){
 /* 넘침 검사 */
 function check(i){
   const card = cards[i], d = DEFS[i], flag = flags[i];
+  if(!flag) return;
   const msgs = [];
   const head = card.querySelector('.c-headline .te, .b-headline .te');
   if(head){
@@ -401,12 +456,10 @@ function check(i){
   }
   flag.textContent = msgs.join(' ');
   flag.classList.toggle('on', msgs.length > 0);
-  if(i === 0) check6only();
+  if(i === 0 && !guard){ guard = true; check(6); guard = false; }
 }
 let guard = false;
-function check6only(){ if(guard) return; guard = true; check(6); guard = false; }
 
-/* 사진 넣기 */
 function setImage(i, file){
   if(!file || !file.type.startsWith('image/')) return;
   const fr = new FileReader();
@@ -414,7 +467,6 @@ function setImage(i, file){
   fr.readAsDataURL(file);
 }
 
-/* 컨트롤 패널 */
 function buildPanel(i){
   const s = state[i];
   const p = document.createElement('div');
@@ -440,14 +492,14 @@ function buildPanel(i){
   p.appendChild(row);
 
   const sliders = [
-    ['확대', 'zoom', 100, 260, 1, v=>v+'%'],
-    ['가로 위치', 'px', 0, 100, 1, v=>v+'%'],
-    ['세로 위치', 'py', 0, 100, 1, v=>v+'%'],
-    ['위 어둡기', 'top', 0, 100, 1, v=>v+'%'],
-    ['아래 어둡기', 'bot', 0, 100, 1, v=>v+'%'],
+    ['확대', 'zoom', 100, 260],
+    ['가로 위치', 'px', 0, 100],
+    ['세로 위치', 'py', 0, 100],
+    ['위 어둡기', 'top', 0, 100],
+    ['아래 어둡기', 'bot', 0, 100],
   ];
   const syncers = [];
-  sliders.forEach(([label, key, min, max, step, fmt])=>{
+  sliders.forEach(([label, key, min, max])=>{
     const f = document.createElement('div');
     f.className = 'field';
     const l = document.createElement('label');
@@ -455,12 +507,12 @@ function buildPanel(i){
     const g = document.createElement('div');
     g.className = 'slider';
     const r = document.createElement('input');
-    r.type='range'; r.min=min; r.max=max; r.step=step; r.value=s[key];
+    r.type='range'; r.min=min; r.max=max; r.step=1; r.value=s[key];
     r.setAttribute('aria-label', label);
     const v = document.createElement('span');
-    v.className='val mono'; v.textContent = fmt(s[key]);
-    r.addEventListener('input', ()=>{ s[key] = +r.value; v.textContent = fmt(r.value); paint(i); save(); });
-    syncers.push(()=>{ r.value = s[key]; v.textContent = fmt(s[key]); });
+    v.className='val mono'; v.textContent = s[key] + '%';
+    r.addEventListener('input', ()=>{ s[key] = +r.value; v.textContent = r.value + '%'; paint(i); save(); });
+    syncers.push(()=>{ r.value = s[key]; v.textContent = s[key] + '%'; });
     g.append(r, v);
     f.append(l, g);
     p.appendChild(f);
@@ -480,6 +532,7 @@ function buildPanel(i){
 }
 
 const cards = [], flags = [], syncs = [];
+let active = 0;
 
 DEFS.forEach((d, i)=>{
   const row = document.createElement('div');
@@ -507,18 +560,14 @@ DEFS.forEach((d, i)=>{
   row.append(left, panel);
   rowsEl.appendChild(row);
 
-  /* 드래그 앤 드롭 */
   stage.addEventListener('dragover', e=>{ e.preventDefault(); stage.classList.add('dragover'); });
   stage.addEventListener('dragleave', ()=> stage.classList.remove('dragover'));
   stage.addEventListener('drop', e=>{
     e.preventDefault(); stage.classList.remove('dragover');
     setImage(i, e.dataTransfer.files[0]);
   });
-
-  /* 활성 카드 추적 (붙여넣기 대상) */
   stage.addEventListener('pointerdown', ()=>{ active = i; });
 
-  /* 사진 끌어서 위치 잡기 */
   let drag = null;
   card.addEventListener('pointerdown', e=>{
     if(e.target.isContentEditable || !state[i].img) return;
@@ -539,9 +588,6 @@ DEFS.forEach((d, i)=>{
   paint(i);
 });
 
-let active = 0;
-
-/* 카드 축소 비율 맞추기 */
 function fit(){
   document.querySelectorAll('.stage').forEach(st=>{
     st.querySelector('.scaler').style.transform = `scale(${st.clientWidth / 1080})`;
@@ -550,8 +596,8 @@ function fit(){
 }
 new ResizeObserver(fit).observe(document.body);
 fit();
+document.fonts.ready.then(fit);
 
-/* 붙여넣기로 사진 넣기 */
 window.addEventListener('paste', e=>{
   if(document.activeElement && document.activeElement.isContentEditable) return;
   const items = [...(e.clipboardData?.items || [])];
@@ -560,7 +606,8 @@ window.addEventListener('paste', e=>{
 });
 
 /* ══════════════════════════════════════════════════════════
-   내보내기 — 카드 DOM 을 SVG foreignObject 로 감싸 PNG 로 굽는다
+   내보내기 — 카드 DOM 을 SVG foreignObject 로 감싸 PNG 로 굽는다.
+   그 카드에 쓰인 글자를 덮는 폰트 서브셋만 함께 넣는다.
    ══════════════════════════════════════════════════════════ */
 async function toPNG(card){
   const clone = card.cloneNode(true);
@@ -571,7 +618,7 @@ async function toPNG(card){
   });
   const body = document.createElementNS('http://www.w3.org/1999/xhtml','div');
   const style = document.createElementNS('http://www.w3.org/1999/xhtml','style');
-  style.textContent = CARD_CSS;
+  style.textContent = fontCSSFor(clone.textContent) + CARD_CSS;
   body.append(style, clone);
   const xml = new XMLSerializer().serializeToString(body);
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1350">`
@@ -579,8 +626,8 @@ async function toPNG(card){
   const url = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
 
   const img = new Image();
-  img.decoding = 'sync';
   await new Promise((res, rej)=>{ img.onload = res; img.onerror = ()=>rej(new Error('render')); img.src = url; });
+  if(img.decode) { try{ await img.decode(); }catch(e){} }
 
   const cv = document.createElement('canvas');
   cv.width = 1080; cv.height = 1350;
@@ -596,6 +643,7 @@ document.getElementById('btn-export').addEventListener('click', async ()=>{
   const box = document.getElementById('shots');
   box.innerHTML = '<p>굽는 중…</p>';
   modalShots.classList.add('on');
+  await document.fonts.ready;
   const out = [];
   for(let i = 0; i < cards.length; i++){
     try{
@@ -610,12 +658,10 @@ document.getElementById('btn-export').addEventListener('click', async ()=>{
 document.getElementById('shots-close').addEventListener('click', ()=> modalShots.classList.remove('on'));
 modalShots.addEventListener('click', e=>{ if(e.target === modalShots) modalShots.classList.remove('on'); });
 
-/* 텍스트 복사 */
 document.getElementById('btn-copy').addEventListener('click', async ()=>{
   const txt = DEFS.map((d, i)=>{
     const s = state[i];
-    const head = s.a ? s.a + '\n' : '';
-    return `[${i+1}] ${d.frame}\n${head}${s.b}`;
+    return `[${i+1}] ${d.frame}\n${s.a ? s.a + '\n' : ''}${s.b}`;
   }).join('\n\n---\n\n');
   try{
     await navigator.clipboard.writeText(txt);
@@ -628,7 +674,6 @@ document.getElementById('btn-copy').addEventListener('click', async ()=>{
   }
 });
 
-/* 스크립트 일괄 입력 */
 const modalScript = document.getElementById('modal-script');
 document.getElementById('btn-script').addEventListener('click', ()=>{
   document.getElementById('script-in').value = '';
@@ -652,8 +697,7 @@ document.getElementById('script-apply').addEventListener('click', ()=>{
   blocks.forEach((b, i)=>{
     const lines = b.split('\n').map(l=>l.trim()).filter(Boolean);
     if(/^\[\d\]/.test(lines[0])) lines.shift();
-    const d = DEFS[i];
-    if(d.type === 'closing'){ state[i].a = ''; state[i].b = lines.join(' '); }
+    if(DEFS[i].type === 'closing'){ state[i].a = ''; state[i].b = lines.join(' '); }
     else { state[i].a = lines.shift() || ''; state[i].b = lines.join(' '); }
   });
   modalScript.classList.remove('on');
@@ -675,7 +719,6 @@ function redrawText(){
   });
 }
 
-/* 초기화 */
 document.getElementById('btn-reset').addEventListener('click', ()=>{
   if(!confirm('7장의 글과 사진을 모두 지웁니다. 계속할까요?')) return;
   state = DEFAULT_STATE();
