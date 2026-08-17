@@ -5,6 +5,8 @@
      a = 헤드라인 (클로징은 빈 문자열), b = 본문 / 서브카피 / 클로징 문장
      p = 사진 추천 — 태도2 블록4(이미지 방향 가이드)의 피사체·구도 / 톤 /
          검색 키워드 세 줄을 그대로 옮긴다. 실제 사진은 찾아 넣지 않는다.
+     caption = 태도2 블록2(캡션) — body 는 본문 문장, tags 는 해시태그 줄을
+         그대로 옮긴다.
      key 는 회차마다 바꿔서 이전 회차 저장분과 섞이지 않게 한다.
 ─────────────────────────────────────────────────────────────── -->
 <script id="deck" type="application/json">
@@ -18,7 +20,8 @@
     { "a": "", "b": "", "p": "" },
     { "a": "", "b": "", "p": "" },
     { "a": "", "b": "", "p": "" }
-  ]
+  ],
+  "caption": { "body": "", "tags": "" }
 }
 </script>
 
@@ -209,6 +212,15 @@ input[type=range]{width:100%;accent-color:var(--accent)}
   background:var(--panel-2);border:1px solid var(--line);border-radius:7px;
   padding:9px 11px;
 }
+.capsec{margin-bottom:18px}
+.caphead{font-size:13px;font-weight:700;color:var(--ink)}
+.capbody{
+  font-size:14px;line-height:1.7;color:var(--ink);white-space:pre-wrap;
+  word-break:keep-all;overflow-wrap:break-word;outline:none;min-height:1.7em;
+  background:var(--panel-2);border:1px solid var(--line);border-radius:7px;
+  padding:10px 12px;
+}
+.capbody.empty:not(:focus)::before{content:attr(data-ph);color:var(--ink-3)}
 .btnrow{display:flex;flex-wrap:wrap;gap:8px}
 .flag{
   display:none;font-size:12.5px;font-weight:700;line-height:1.5;
@@ -278,7 +290,9 @@ textarea:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
     <p><b>구글 드라이브</b> — <b>구글 드라이브에 저장</b>을 누르면 7장을 굽고 zip 하나로 묶어 커버 헤드라인 이름으로 내 구글 드라이브에 올립니다. claude.ai에서 이 아티팩트를 열고 구글 드라이브 커넥터가 연결돼 있어야 보이는 버튼입니다.</p>
     <p><b>글씨체</b> — Noto Sans KR을 파일 안에 심어 두었습니다. 어떤 기기에서 열어도, 내보낸 PNG에서도 같은 글씨체가 나옵니다. 자간·행간·좌표는 Figma 파일 <span class="mono">클로드 연결</span>의 대표 커버·대표 본문·대표 클로징 값 그대로이고, 고친 내용은 이 브라우저에 자동 저장됩니다.</p>
     <p><b>사진 추천</b> — 태도2가 카드마다 준 이미지 방향·검색 키워드가 있으면 그 카드 패널에 그대로 표시됩니다. 실제 사진을 찾아 오는 건 이 편집기의 역할이 아닙니다.</p>
+    <p><b>캡션</b> — 태도2 블록2(캡션)의 본문과 해시태그도 카드 위쪽 캡션 칸에 그대로 들어갑니다. 고치면 카드와 똑같이 이 브라우저에 자동 저장되고, <b>텍스트 복사</b>에도 함께 담깁니다.</p>
   </div>
+  <div class="panel capsec" id="caption-panel"></div>
   <div id="rows" class="rows"></div>
 </main>
 
@@ -439,12 +453,31 @@ state.forEach(s=>{
   }
 });
 
+/* 캡션(게시글 본문·해시태그)은 카드 상태와 별도 키에 저장한다 — 카드
+   저장분은 길이 7짜리 배열이어야 복원되므로, 같은 키에 얹으면 기존
+   저장분 복원 검사(state.length===7)가 깨질 수 있다. */
+const CAP_KEY = KEY + '__caption';
+const DEFAULT_CAPTION = () => ({
+  body: (DECK.caption && DECK.caption.body) || '',
+  tags: (DECK.caption && DECK.caption.tags) || '',
+});
+let caption;
+try{ caption = JSON.parse(localStorage.getItem(CAP_KEY)) || DEFAULT_CAPTION(); }
+catch(e){ caption = DEFAULT_CAPTION(); }
+if(!caption || typeof caption !== 'object' || Array.isArray(caption)) caption = DEFAULT_CAPTION();
+caption.body = caption.body || '';
+caption.tags = caption.tags || '';
+
 let saveTimer;
 function save(){
   clearTimeout(saveTimer);
   document.getElementById('saved').textContent = '저장 중…';
   saveTimer = setTimeout(()=>{
-    try{ localStorage.setItem(KEY, JSON.stringify(state)); document.getElementById('saved').textContent='저장됨'; }
+    try{
+      localStorage.setItem(KEY, JSON.stringify(state));
+      localStorage.setItem(CAP_KEY, JSON.stringify(caption));
+      document.getElementById('saved').textContent='저장됨';
+    }
     catch(e){ document.getElementById('saved').textContent='저장 실패 (사진이 너무 큼)'; }
   }, 400);
 }
@@ -499,6 +532,43 @@ function insertInto(el, text){
      다음 타이핑 때 캐럿이 방금 넣은 글자 앞으로 되돌아간다. */
   document.execCommand('insertText', false, text);
 }
+
+/* ── 캡션 칸 — 카드가 아니라 게시글 자체의 본문·해시태그.
+   글자 처리는 카드 글자 상자(tbox)와 같은 방식(readText/save)을 쓰지만
+   check(i)로 넘침을 재는 카드 전용 로직은 없다. ──────────────────── */
+function capBox(container, key, labelText, ph){
+  const field = document.createElement('div');
+  field.className = 'field';
+  const lab = document.createElement('label');
+  lab.textContent = labelText;
+  const te = document.createElement('div');
+  te.className = 'te capbody';
+  te.textContent = caption[key];
+  try{ te.contentEditable = 'plaintext-only'; }catch(e){}
+  if(!te.isContentEditable) te.contentEditable = 'true';
+  te.dataset.ph = ph || '';
+  te.spellcheck = false;
+  te.classList.toggle('empty', !te.textContent);
+  te.addEventListener('input', ()=>{
+    const v = readText(te);
+    caption[key] = v;
+    te.classList.toggle('empty', !v);
+    save();
+  });
+  field.append(lab, te);
+  container.appendChild(field);
+}
+
+(function buildCaptionPanel(){
+  const panel = document.getElementById('caption-panel');
+  if(!panel) return;
+  const head = document.createElement('div');
+  head.className = 'caphead';
+  head.textContent = '게시글 캡션';
+  panel.appendChild(head);
+  capBox(panel, 'body', '본문', '캡션 본문');
+  capBox(panel, 'tags', '해시태그', '#해시태그 #readandlive');
+})();
 
 function gradient(top, bot){
   return `linear-gradient(180deg, rgba(0,0,0,${(top/100).toFixed(3)}) 0%, rgba(0,0,0,${(((top+bot)/2)/100*0.72).toFixed(3)}) 46%, rgba(0,0,0,${(bot/100).toFixed(3)}) 100%)`;
@@ -1378,10 +1448,14 @@ document.getElementById('shots-close').addEventListener('click', closeShots);
 modalShots.addEventListener('click', e=>{ if(e.target === modalShots) closeShots(); });
 
 document.getElementById('btn-copy').addEventListener('click', async ()=>{
-  const txt = DEFS.map((d, i)=>{
+  const cardsTxt = DEFS.map((d, i)=>{
     const s = state[i];
     return `[${i+1}] ${d.frame}\n${s.a ? s.a + '\n' : ''}${s.b}`;
   }).join('\n\n---\n\n');
+  const capTxt = (caption.body || caption.tags)
+    ? `\n\n---\n\n[캡션]\n${caption.body}${caption.tags ? '\n\n' + caption.tags : ''}`
+    : '';
+  const txt = cardsTxt + capTxt;
   const b = document.getElementById('btn-copy');
   try{
     await navigator.clipboard.writeText(txt);
