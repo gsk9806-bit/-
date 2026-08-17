@@ -238,6 +238,7 @@ input[type=range]{width:100%;accent-color:var(--accent)}
 .shot span{font-size:11.5px;color:var(--ink-3)}
 .shot button{padding:6px 10px;font-size:12px}
 body.nosave #btn-saveall,body.nosave .btn-save1{display:none}
+body.nodrive #btn-drive{display:none}
 textarea{
   width:100%;min-height:260px;font-family:inherit;font-size:13px;line-height:1.7;
   padding:12px 14px;border-radius:8px;border:1px solid var(--line);
@@ -259,6 +260,7 @@ textarea:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
       <button id="btn-copy">텍스트 복사</button>
       <button id="btn-export">미리보기</button>
       <button id="btn-saveall" class="primary">PNG 7장 저장</button>
+      <button id="btn-drive" class="ghost">구글 드라이브에 저장</button>
       <button id="btn-reset" class="ghost">초기화</button>
     </div>
     <div class="saved mono" id="saved">저장됨</div>
@@ -273,6 +275,7 @@ textarea:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
     <p><b>사진 상자</b> — 넣은 사진은 주황색 상자로 표시됩니다. 상자를 <b>끌면 옮겨지고</b>, <b>모서리</b>를 끌면 비율을 지킨 채 커지거나 작아지고, <b>변 가운데</b>를 끌면 그쪽만 늘거나 줄어 사진이 잘립니다. 끄는 동안 크기가 숫자로 뜹니다. 카드 밖으로 나간 부분은 흐리게 보이고 실제 카드에는 나오지 않습니다.</p>
     <p><b>Ctrl</b>/<b>⌘</b>+<b>V</b>를 눌렀는데 위쪽에 아무 메시지도 뜨지 않으면, 이 화면이 키 입력을 받지 못한 것입니다. 카드를 한 번 더 누르고 다시 시도하거나, <b>클립보드에서</b> 버튼을 누르세요. 파일을 카드 위로 끌어다 놓거나 <b>사진 넣기</b>로 골라도 됩니다.</p>
     <p><b>PNG</b> — <b>PNG 7장 저장</b>을 누르면 1080×1350 PNG 일곱 장을 차례로 받습니다. 카드마다 확인창이 한 번씩 뜹니다. 한 장만 필요하면 그 카드 옆의 <b>PNG 저장</b>을, 굽기 전에 눈으로 확인하려면 <b>미리보기</b>를 누르세요.</p>
+    <p><b>구글 드라이브</b> — <b>구글 드라이브에 저장</b>을 누르면 7장을 굽고 zip 하나로 묶어 커버 헤드라인 이름으로 내 구글 드라이브에 올립니다. claude.ai에서 이 아티팩트를 열고 구글 드라이브 커넥터가 연결돼 있어야 보이는 버튼입니다.</p>
     <p><b>글씨체</b> — Noto Sans KR을 파일 안에 심어 두었습니다. 어떤 기기에서 열어도, 내보낸 PNG에서도 같은 글씨체가 나옵니다. 자간·행간·좌표는 Figma 파일 <span class="mono">클로드 연결</span>의 대표 커버·대표 본문·대표 클로징 값 그대로이고, 고친 내용은 이 브라우저에 자동 저장됩니다.</p>
     <p><b>사진 추천</b> — 태도2가 카드마다 준 이미지 방향·검색 키워드가 있으면 그 카드 패널에 그대로 표시됩니다. 실제 사진을 찾아 오는 건 이 편집기의 역할이 아닙니다.</p>
   </div>
@@ -1148,6 +1151,173 @@ document.getElementById('btn-saveall').addEventListener('click', async e=>{
     stat(`7장 모두 저장했습니다.`);
   }catch(err){
     stat('카드를 굽지 못했습니다. 미리보기로 확인해 주세요.', true);
+  }finally{
+    btn.disabled = false;
+    btn.textContent = label;
+  }
+});
+
+/* ══════════════════════════════════════════════════════════
+   구글 드라이브 저장 — 7장을 굽어 zip(무압축) 하나로 묶고
+   viewer 의 mcp 능력으로 뷰어 계정의 구글 드라이브 커넥터에 올린다.
+   ══════════════════════════════════════════════════════════ */
+const MCP_SERVER = 'Google Drive';
+const MCP_TOOL = 'create_file';
+let MCP = null;
+const mcpReady = (async ()=>{
+  try{
+    MCP = (window.claude && typeof window.claude.use === 'function')
+      ? await window.claude.use('mcp') : null;
+  }catch(e){ MCP = null; }
+  if(!MCP) document.body.classList.add('nodrive');
+  return MCP;
+})();
+
+const CRC_TABLE = (()=>{
+  const t = new Uint32Array(256);
+  for(let n = 0; n < 256; n++){
+    let c = n;
+    for(let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+    t[n] = c >>> 0;
+  }
+  return t;
+})();
+function crc32(bytes){
+  let crc = 0xFFFFFFFF;
+  for(let i = 0; i < bytes.length; i++) crc = CRC_TABLE[(crc ^ bytes[i]) & 0xFF] ^ (crc >>> 8);
+  return (crc ^ 0xFFFFFFFF) >>> 0;
+}
+
+function dosDateTime(d){
+  const time = ((d.getHours() & 0x1F) << 11) | ((d.getMinutes() & 0x3F) << 5) | ((d.getSeconds() >> 1) & 0x1F);
+  const date = (((d.getFullYear() - 1980) & 0x7F) << 9) | (((d.getMonth() + 1) & 0xF) << 5) | (d.getDate() & 0x1F);
+  return { time, date };
+}
+
+/* 압축 없이(store) 묶는 최소 zip 라이터 — 외부 라이브러리를 못 쓰는
+   CSP 환경이라 로컬/센트럴 헤더와 EOCD 를 직접 만든다. */
+function buildZip(files){
+  const enc = new TextEncoder();
+  const { time, date } = dosDateTime(new Date());
+  const parts = [];
+  const centralParts = [];
+  let offset = 0;
+  const pushU16 = (arr, n) => { arr.push(n & 0xFF, (n >>> 8) & 0xFF); };
+  const pushU32 = (arr, n) => { arr.push(n & 0xFF, (n >>> 8) & 0xFF, (n >>> 16) & 0xFF, (n >>> 24) & 0xFF); };
+
+  for(const f of files){
+    const nameBytes = enc.encode(f.name);
+    const data = f.data;
+    const crc = crc32(data);
+    const size = data.length;
+
+    const lh = [];
+    pushU32(lh, 0x04034b50);
+    pushU16(lh, 20); pushU16(lh, 0); pushU16(lh, 0);
+    pushU16(lh, time); pushU16(lh, date);
+    pushU32(lh, crc); pushU32(lh, size); pushU32(lh, size);
+    pushU16(lh, nameBytes.length); pushU16(lh, 0);
+    const lhBytes = new Uint8Array(lh);
+    parts.push(lhBytes, nameBytes, data);
+
+    const ch = [];
+    pushU32(ch, 0x02014b50);
+    pushU16(ch, 20); pushU16(ch, 20); pushU16(ch, 0); pushU16(ch, 0);
+    pushU16(ch, time); pushU16(ch, date);
+    pushU32(ch, crc); pushU32(ch, size); pushU32(ch, size);
+    pushU16(ch, nameBytes.length); pushU16(ch, 0); pushU16(ch, 0);
+    pushU16(ch, 0); pushU16(ch, 0);
+    pushU32(ch, 0); pushU32(ch, offset);
+    centralParts.push(new Uint8Array(ch), nameBytes);
+
+    offset += lhBytes.length + nameBytes.length + size;
+  }
+
+  const centralStart = offset;
+  const centralSize = centralParts.reduce((n, p) => n + p.length, 0);
+  const eo = [];
+  pushU32(eo, 0x06054b50);
+  pushU16(eo, 0); pushU16(eo, 0);
+  pushU16(eo, files.length); pushU16(eo, files.length);
+  pushU32(eo, centralSize); pushU32(eo, centralStart);
+  pushU16(eo, 0);
+  const eocd = new Uint8Array(eo);
+
+  const out = new Uint8Array(offset + centralSize + eocd.length);
+  let p = 0;
+  for(const part of [...parts, ...centralParts, eocd]){ out.set(part, p); p += part.length; }
+  return out;
+}
+
+function bytesToBase64(bytes){
+  let binary = '';
+  const chunk = 0x8000;
+  for(let i = 0; i < bytes.length; i += chunk) binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+  return btoa(binary);
+}
+
+function sanitizeFileName(s){
+  return (s || 'card-news')
+    .replace(/\n/g, ' ')
+    .replace(/[\\/:*?"<>|]/g, '')
+    .trim()
+    .slice(0, 80) || 'card-news';
+}
+
+const MCP_MSG = {
+  needs_reauth:        '구글 드라이브 연결이 끊어졌습니다. claude.ai 설정 → 커넥터에서 다시 연결해 주세요.',
+  server_not_connected:'구글 드라이브가 연결돼 있지 않습니다. claude.ai 설정 → 커넥터에서 추가해 주세요.',
+  selection_required:  '연결된 구글 드라이브 계정이 여러 개입니다. 다시 눌러 계정을 골라 주세요.',
+  not_in_manifest:     '이 화면에는 구글 드라이브 저장 권한이 없습니다.',
+  blocked_by_policy:   '조직 정책으로 구글 드라이브 저장이 막혀 있습니다.',
+  approval_required:   '구글 드라이브 저장에 승인이 더 필요합니다.',
+  tool_error:          '구글 드라이브 저장에 실패했습니다.',
+  bad_request:         '파일 이름이나 내용에 문제가 있습니다.',
+  cancelled:           '저장을 취소했습니다.',
+  rate_limited:        '요청이 몰렸습니다. 잠시 뒤 다시 눌러 주세요.',
+  server_unavailable:  '구글 드라이브에 잠시 연결할 수 없습니다. 다시 눌러 주세요.',
+  upstream_error:      '구글 드라이브 저장에 실패했습니다. 다시 눌러 주세요.',
+  not_granted:         '이 화면에서는 구글 드라이브 기능을 쓸 수 없습니다.',
+  capability_disabled: '이 화면에서는 구글 드라이브 기능을 쓸 수 없습니다.',
+  capability_removed:  '이 화면에서는 구글 드라이브 기능을 쓸 수 없습니다.',
+  transform_error:     '요청을 만드는 데 실패했습니다.',
+};
+const mcpMsg = err => (err && MCP_MSG[err.code]) || '구글 드라이브 저장에 실패했습니다.';
+
+document.getElementById('btn-drive').addEventListener('click', async e=>{
+  const btn = e.currentTarget;
+  if(btn.disabled) return;
+  await mcpReady;
+  if(!MCP){ stat(mcpMsg({ code:'not_granted' }), true); return; }
+  btn.disabled = true;
+  const label = btn.textContent;
+  try{
+    await document.fonts.ready;
+    const files = [];
+    for(let i = 0; i < cards.length; i++){
+      btn.textContent = `${i+1}/7 굽는 중…`;
+      stat(`${fileName(i)} 굽는 중…`);
+      const blob = await toPNG(cards[i]);
+      files.push({ name: fileName(i), data: new Uint8Array(await blob.arrayBuffer()) });
+    }
+    btn.textContent = '압축하는 중…';
+    stat('7장을 zip으로 묶는 중…');
+    const zipBytes = buildZip(files);
+    const zipName = `${sanitizeFileName(state[0].a)}.zip`;
+    btn.textContent = '드라이브에 올리는 중…';
+    stat('구글 드라이브로 올리는 중…');
+    const base64 = bytesToBase64(zipBytes);
+    const result = await MCP.callTool(MCP_SERVER, MCP_TOOL, {
+      title: zipName,
+      base64Content: base64,
+      contentMimeType: 'application/zip',
+      disableConversionToGoogleType: true,
+    });
+    const payload = result && result.payload;
+    const link = payload && (payload.viewUrl || payload.webViewLink);
+    stat(link ? `구글 드라이브에 저장했습니다 — ${zipName} (${link})` : `구글 드라이브에 저장했습니다 — ${zipName}`);
+  }catch(err){
+    stat(mcpMsg(err), true);
   }finally{
     btn.disabled = false;
     btn.textContent = label;
