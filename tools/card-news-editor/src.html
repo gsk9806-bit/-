@@ -435,7 +435,7 @@ const DEFAULT_STATE = () => DEFS.map((d, i) => ({
   a: (DECK.cards[i] && DECK.cards[i].a) || '',
   b: (DECK.cards[i] && DECK.cards[i].b) || '',
   p: (DECK.cards[i] && DECK.cards[i].p) || '',
-  credit:'PHOTO @UNSPLASH',
+  credit: d.type==='closing' ? '' : 'PHOTO @UNSPLASH',
   img:'', iw:0, ih:0, bx:0, by:0, bw:CW, bh:CH,
   top: d.type==='body' ? 55 : 72,
   bot: d.type==='body' ? 35 : 12,
@@ -615,7 +615,7 @@ function buildCard(i){
     return te;
   }
 
-  tbox('credit', 'credit', 'PHOTO @UNSPLASH', true);
+  if(d.type !== 'closing') tbox('credit', 'credit', 'PHOTO @UNSPLASH', true);
 
   if(d.type === 'cover'){
     tbox('c-headline', 'a', PH.cover.a, true);
